@@ -14,7 +14,7 @@
 .rail {
   position: fixed; right: var(--gutter); top: 76px; z-index: 10;
   padding: 8px 12px 8px 4px; border-radius: 12px;
-  background: rgba(10, 15, 22, 0.55); backdrop-filter: blur(10px);
+  background: rgba(6, 12, 23, 0.84);
   border: 1px solid var(--pane-line);
 }
 .rail ol { list-style: none; margin: 0; padding: 0; counter-reset: rail; display: grid; gap: 2px; }
@@ -52,7 +52,6 @@ main { position: relative; z-index: 5; pointer-events: none; }
   background: var(--pane);
   border: 1px solid var(--pane-line);
   border-radius: var(--r-pane);
-  backdrop-filter: blur(14px) saturate(1.2);
   pointer-events: auto;
   box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.8);
   max-height: calc(100vh - 13vh - 16px);
@@ -73,7 +72,7 @@ main { position: relative; z-index: 5; pointer-events: none; }
 .card-hero {
   top: 0; min-height: 100vh; width: min(760px, 62vw);
   display: flex; flex-direction: column; justify-content: center;
-  padding: 90px 0 48px; background: none; border: 0; backdrop-filter: none; box-shadow: none;
+  padding: 90px 0 48px; background: none; border: 0; box-shadow: none;
 }
 .chapter-hero::before {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;

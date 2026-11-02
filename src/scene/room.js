@@ -29,12 +29,13 @@ function buildShell(layer, edges) {
   }), opacity);
   const floor = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w, 0.12, ROOM.d), glassStd('#0a1422', 1));
   floor.position.y = -0.06;
+  floor.receiveShadow = true;
   const parts = [
     { size: [ROOM.w, ROOM.h, 0.14], pos: [0, ROOM.h / 2, -ROOM.d / 2 - 0.07] },
     { size: [0.14, ROOM.h, ROOM.d], pos: [-ROOM.w / 2 - 0.07, ROOM.h / 2, 0] },
     { size: [0.14, 0.9, ROOM.d - 1.4], pos: [ROOM.w / 2 + 0.07, 0.45, -0.7] },
   ];
-  const wallMat = glassStd(GLASS_WALL, 0.72);
+  const wallMat = glassStd(GLASS_WALL, 0.4); // đủ trong để xoay ra sau vẫn thấy bên trong
   parts.forEach(({ size, pos }) => {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(...size), wallMat);
     wall.position.set(...pos);
@@ -78,6 +79,8 @@ function buildFurniture(layer, edges, deviceEdges) {
   const m = new THREE.Matrix4();
   pieces.forEach(({ size, y, dz }) => {
     const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(...size), deskMat, DESKS.length);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     DESKS.forEach((d, i) => {
       m.makeTranslation(d.x, y, d.z + dz);
       mesh.setMatrixAt(i, m);
@@ -137,9 +140,18 @@ export function createRoom(scene) {
   layer.group.add(holoLines(layer, edges, { opacity: 0.32 }), holoLines(layer, deviceEdges, { opacity: 0.8, boost: 1.5 }));
   const { lamps, areas } = buildLamps(layer);
 
+  // Đèn mặt trời: sun.js đặt vị trí/cường độ theo giờ; chỉ nguồn này đổ bóng.
   const sun = new THREE.DirectionalLight(PALETTE.sun, 0);
-  sun.position.set(-4, 9, 16);
   sun.target.position.set(0, 0, 0);
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -12;
+  sun.shadow.camera.right = 12;
+  sun.shadow.camera.top = 12;
+  sun.shadow.camera.bottom = -12;
+  sun.shadow.camera.near = 2;
+  sun.shadow.camera.far = 80;
+  sun.shadow.bias = -0.0008;
+  sun.shadow.normalBias = 0.02;
   layer.group.add(sun, sun.target);
 
   scene.add(layer.group);
@@ -166,9 +178,9 @@ export function createRoom(scene) {
       areas.forEach((a, i) => {
         a.intensity = (shown.pwm[i] / 100) * 3 * mix;
       });
-      sun.intensity = shown.daylight * 1.3 * mix;
       glassMat.opacity = (0.012 + shown.daylight * 0.012) * mix;
     },
     getShownPwm: () => [...shown.pwm],
+    sunLight: sun,
   };
 }

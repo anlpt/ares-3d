@@ -15,8 +15,10 @@ import { createZones } from './scene/zones.js';
 import { createHvac } from './scene/hvac.js';
 import { createLearning, LEARN_STEPS } from './scene/learning.js';
 import { createNetwork } from './scene/network.js';
+import { createSun } from './scene/sun.js';
 import { createEngine } from './sim/engine.js';
 import { CHAPTERS } from './story/chapters.js';
+import { formatClock } from './sim/schedule.js';
 import { createDirector } from './story/director.js';
 import { createHud } from './ui/hud.js';
 import { createSandbox } from './ui/sandbox.js';
@@ -50,13 +52,15 @@ function buildWorld() {
   const hvac = createHvac(scene);
   const learning = createLearning(scene);
   const network = createNetwork(scene);
+  const sun = createSun(scene, room.sunLight);
   const engine = createEngine();
   const layers = {
     building: building.layer, room: room.layer, people: people.layer, vision: vision.layer,
     zones: zones.zones, buffers: zones.buffers, hvac: hvac.layer, learning: learning.layer, network: network.layer,
+    sun: sun.layer,
   };
   const director = createDirector({ camera, layers, engine, people, reducedMotion });
-  return { canvas, stage, room, building, people, vision, zones, hvac, learning, network, engine, director };
+  return { canvas, stage, room, building, people, vision, zones, hvac, learning, network, sun, engine, director };
 }
 
 function setupScroll(world, ui) {
@@ -73,11 +77,13 @@ function setupScroll(world, ui) {
     world.director.goTo(chapter);
     ui.hud.setVisible(chapter.hud !== false);
     ui.sandbox.setActive(Boolean(chapter.interactive));
+    world.director.orbitPaused = Boolean(chapter.interactive);
+    ui.syncChapterControls?.(chapter);
     document.body.dataset.chapter = chapter.id;
     railButtons.forEach((b) => b.setAttribute('aria-current', String(b.dataset.goto === chapter.id)));
   };
 
-  document.querySelectorAll('[data-chapter]').forEach((section) => {
+  document.querySelectorAll('main [data-chapter]').forEach((section) => {
     const chapter = CHAPTERS.find((c) => c.id === section.dataset.chapter);
     if (!chapter) return;
     ScrollTrigger.create({
@@ -98,7 +104,7 @@ function setupScroll(world, ui) {
   });
 
   const scrollTo = (id) => {
-    const el = document.querySelector(`[data-chapter="${id}"]`);
+    const el = document.querySelector(`main [data-chapter="${id}"]`);
     if (!el) return;
     if (lenis) lenis.scrollTo(el, { offset: 0, duration: 1.6 });
     else el.scrollIntoView();
@@ -109,10 +115,44 @@ function setupScroll(world, ui) {
 }
 
 const BUILDING_CHAPTERS = new Set(['hero', 'scale']);
+const DRAG_THRESHOLD_PX = 5;
+
+/** Kéo chuột trên cảnh để xoay 360°; phân biệt kéo với bấm để không thêm người/bay vào phòng nhầm. */
+function setupOrbit(world) {
+  const { canvas, director } = world;
+  const drag = { active: false, x: 0, y: 0, moved: 0 };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.pointerType === 'touch') return;
+    Object.assign(drag, { active: true, x: e.clientX, y: e.clientY, moved: 0 });
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag.active) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+    drag.moved += Math.abs(dx) + Math.abs(dy);
+    if (drag.moved > DRAG_THRESHOLD_PX) {
+      canvas.classList.add('is-dragging');
+      director.drag(dx, dy);
+    }
+  });
+  window.addEventListener('pointerup', () => {
+    drag.active = false;
+    canvas.classList.remove('is-dragging');
+  });
+  const toggle = document.querySelector('[data-orbit]');
+  toggle.setAttribute('aria-pressed', String(director.autoRotate));
+  toggle.addEventListener('click', () => {
+    director.autoRotate = !director.autoRotate;
+    toggle.setAttribute('aria-pressed', String(director.autoRotate));
+  });
+  return { wasDrag: () => drag.moved > DRAG_THRESHOLD_PX };
+}
 const inBuildingChapter = (world) => BUILDING_CHAPTERS.has(world.director.chapter?.id);
 
 /** Rê chuột lên một tầng để làm nổi tầng đó; bấm vào P101 để bay vào phòng. */
-function setupBuildingPointer(world, ui, scrollTo) {
+function setupBuildingPointer(world, ui, scrollTo, orbit) {
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const pickAt = (e) => {
@@ -122,24 +162,43 @@ function setupBuildingPointer(world, ui, scrollTo) {
     return world.building.pick(ray);
   };
   world.canvas.addEventListener('pointermove', (e) => {
+    if (e.buttons && orbit.wasDrag()) return;
     const hit = pickAt(e);
     ui.callouts.setHover(hit ? hit.floor : -1);
     world.canvas.classList.toggle('is-pointing', Boolean(hit?.isP101));
   });
   world.canvas.addEventListener('pointerleave', () => ui.callouts.setHover(-1));
   world.canvas.addEventListener('click', (e) => {
-    if (pickAt(e)?.isP101) scrollTo('see');
+    if (!orbit.wasDrag() && pickAt(e)?.isP101) scrollTo('see');
   });
 }
 
-function setupInlineControls(world) {
+const SKY_WORDS = ['U ám', 'Nhiều mây', 'Nắng nhẹ', 'Nắng', 'Nắng gắt'];
+const skyWord = (v) => SKY_WORDS[Math.min(SKY_WORDS.length - 1, Math.floor(v * SKY_WORDS.length))];
+
+function setupInlineControls(world, ui) {
   const sky = document.getElementById('lightSky');
   const skyOut = document.getElementById('lightSkyOut');
-  sky?.addEventListener('input', () => {
+  const time = document.getElementById('lightTime');
+  const timeOut = document.getElementById('lightTimeOut');
+  sky.addEventListener('input', () => {
     const v = Number(sky.value) / 100;
     world.engine.setInputs({ sky: v });
-    skyOut.textContent = `${Math.round(world.engine.getState().outdoorLux / 1000)} nghìn lux ngoài trời`;
+    skyOut.textContent = skyWord(v);
   });
+  time.addEventListener('input', () => {
+    world.engine.setInputs({ minute: Number(time.value) });
+    timeOut.textContent = formatClock(Number(time.value));
+  });
+  // Khi quay lại chương Đèn, thanh kéo khớp với trạng thái mô phỏng của chương.
+  // eslint-disable-next-line no-param-reassign -- gắn hook vào object ui dùng chung
+  ui.syncChapterControls = (chapter) => {
+    if (chapter.id !== 'light') return;
+    time.value = String(chapter.sim.minute);
+    timeOut.textContent = formatClock(chapter.sim.minute);
+    sky.value = String(Math.round(chapter.sim.sky * 100));
+    skyOut.textContent = skyWord(chapter.sim.sky);
+  };
   const chart = renderPrecoolChart(document.getElementById('precoolChart'));
   document.getElementById('precoolLead').textContent = `${Math.round(chart.lead)} phút`;
   document.getElementById('precoolAres').textContent = `${chart.fmt(chart.aresAtClass)} °C`;
@@ -166,6 +225,7 @@ function startLoop(world, ui) {
     world.room.update(state, dt, { compare });
     const occupied = state.inputs.zoneCounts.some((n) => n > 0);
     world.building.update(dt, { occupied });
+    world.sun.update(state, dt);
     ui.callouts.update(state, dt, { active: inBuildingChapter(world), mix: world.building.layer.mix });
     world.vision.update(world.people.agents(), dt);
     world.zones.update(state, world.people.agents(), dt);
@@ -184,18 +244,19 @@ function boot() {
     return;
   }
   const world = buildWorld();
+  const orbit = setupOrbit(world);
   const ui = {
     hud: createHud(document.getElementById('hud')),
     sandbox: createSandbox(document.getElementById('sandbox'), {
       engine: world.engine, people: world.people, director: world.director,
-      camera: world.stage.camera, canvas: world.canvas,
+      camera: world.stage.camera, canvas: world.canvas, wasDrag: orbit.wasDrag,
     }),
     callouts: createCallouts(document.getElementById('callouts'), { camera: world.stage.camera, building: world.building }),
   };
   world.people.setTarget(16, [1, 1, 1, 1], { instant: true });
-  setupInlineControls(world);
+  setupInlineControls(world, ui);
   const { scrollTo } = setupScroll(world, ui);
-  setupBuildingPointer(world, ui, scrollTo);
+  setupBuildingPointer(world, ui, scrollTo, orbit);
   startLoop(world, ui);
   if (import.meta.env.DEV) window.__ares = world;
   setTimeout(() => document.body.classList.add('is-ready'), 60);

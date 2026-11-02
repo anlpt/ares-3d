@@ -6,7 +6,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { PALETTE } from './palette.js';
 
-const MAX_PIXEL_RATIO = 1.75;
+const MAX_PIXEL_RATIO = 1.5;
 
 /** Nền trời đêm: xanh thẫm ở trên, sáng dần về đường chân trời như ánh đèn thành phố. */
 function skyTexture() {
@@ -36,6 +36,8 @@ export function createStage(canvas, labelRoot) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = skyTexture();

@@ -12,7 +12,7 @@ const SKY_WORDS = ['U ám', 'Nhiều mây', 'Nắng nhẹ', 'Nắng', 'Nắng g�
  * @param {HTMLElement} root
  * @param {{engine:object, people:object, director:object, camera:THREE.Camera, canvas:HTMLCanvasElement}} deps
  */
-export function createSandbox(root, { engine, people, director, camera, canvas }) {
+export function createSandbox(root, { engine, people, director, camera, canvas, wasDrag }) {
   const $ = (k) => root.querySelector(`[data-sb="${k}"]`);
   const ctl = {
     minute: $('minute'), people: $('people'), sky: $('sky'), tout: $('tout'),
@@ -57,8 +57,8 @@ export function createSandbox(root, { engine, people, director, camera, canvas }
   const ndc = new THREE.Vector2();
   const floor = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   const hit = new THREE.Vector3();
-  canvas.addEventListener('pointerdown', (e) => {
-    if (!active) return;
+  canvas.addEventListener('click', (e) => {
+    if (!active || wasDrag()) return;
     ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     const picked = ray.intersectObjects(people.meshes(), false)[0];

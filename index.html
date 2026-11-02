@@ -17,6 +17,9 @@
   <header class="topbar">
     <span class="wordmark" aria-label="ARES">ARES</span>
     <span class="topbar-room">Phòng P101</span>
+    <button class="btn btn-ghost orbit-toggle" type="button" data-orbit aria-pressed="true" title="Kéo chuột trên cảnh để xoay sang góc khác">
+      <span class="orbit-icon" aria-hidden="true"></span>Tự xoay 360°
+    </button>
     <button class="btn btn-ghost" type="button" data-goto="sandbox">Mở mô phỏng</button>
   </header>
 
@@ -116,7 +119,7 @@
           <button class="btn btn-primary" type="button" data-goto="see">Bắt đầu tham quan</button>
           <button class="btn btn-ghost" type="button" data-goto="sandbox">Tự điều khiển phòng</button>
         </div>
-        <p class="caption">Mỗi ô cửa sáng là một phòng đang có người.</p>
+        <p class="caption">Mỗi ô cửa sáng là một phòng đang có người. Kéo chuột trên cảnh để xoay xem mọi góc.</p>
       </div>
     </section>
 
@@ -157,10 +160,14 @@
         <h2 id="h-light">Đèn chỉ bù phần nắng còn thiếu</h2>
         <p>Vùng có người được giữ 400 lux trên mặt bàn (450 lux khi hơn 8 người). Vùng trống quá 3 phút về mức nền 10–15 %, cả phòng trống quá 3 phút thì tắt. Hai vùng cạnh mặt kính nhận nắng nên đèn tự dịu đi.</p>
         <p class="formula" aria-label="Công thức PWM">PWM<sub>t</sub> = PWM<sub>t−1</sub> + 100 · K<sub>p</sub> · e / ΔL<sub>max</sub></p>
+        <p class="small">Vệt vàng trên sàn là nắng xuyên qua từng ô kính. Kéo giờ để mặt trời di chuyển: vùng nào nhận đủ nắng thì đèn vùng đó tự giảm.</p>
         <label class="inline-control">
-          <span>Kéo để đổi nắng ngoài cửa sổ</span>
+          <span>Giờ trong ngày <output id="lightTimeOut" for="lightTime">15:00</output></span>
+          <input id="lightTime" type="range" min="375" max="1065" step="5" value="900" />
+        </label>
+        <label class="inline-control">
+          <span>Bầu trời <output id="lightSkyOut" for="lightSky">Nắng gắt</output></span>
           <input id="lightSky" type="range" min="0" max="100" value="90" />
-          <output id="lightSkyOut" for="lightSky">Nắng chiều</output>
         </label>
       </div>
     </section>

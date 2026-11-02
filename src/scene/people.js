@@ -8,6 +8,14 @@ import { fresnelMaterial } from './holo.js';
 const WALK_SPEED = 2.4;
 const SPAWN_GAP_S = 0.22;
 const SEATED_DROP = 0.42;
+const TURN_RATE = 9;
+const SIT_RATE = 6;
+
+/** Xoay mượt về hướng đích theo đường ngắn nhất (tránh quay 359°). */
+function dampAngle(from, to, rate, dt) {
+  const diff = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  return from + diff * (1 - Math.exp(-rate * dt));
+}
 
 function makeMesh(layer, bodyMat) {
   const g = new THREE.Group();
@@ -15,7 +23,12 @@ function makeMesh(layer, bodyMat) {
   body.position.y = 0.6;
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), bodyMat);
   head.position.y = 1.28;
+  body.castShadow = true;
+  head.castShadow = true;
   g.add(body, head);
+  g.renderOrder = 2;
+  body.renderOrder = 2;
+  head.renderOrder = 2;
   layer.group.add(g);
   return g;
 }
@@ -59,7 +72,7 @@ export function createPeople(scene) {
     mesh.position.copy(pos);
     mesh.visible = instant || wait <= 0;
     const agent = {
-      id: nextId, mesh, pos, seat, conf: 0.9, wait,
+      id: nextId, mesh, pos, seat, conf: 0.9, wait, heading: Math.PI, sit: instant ? 1 : 0,
       path: instant ? [] : pathIn(seat), mode: instant ? 'seated' : 'walking',
     };
     nextId += 1;
@@ -88,15 +101,17 @@ export function createPeople(scene) {
         a.path = a.path.slice(1);
       } else {
         a.pos.addScaledVector(delta.normalize(), step);
-        a.mesh.rotation.y = Math.atan2(delta.x, delta.z);
+        a.heading = dampAngle(a.heading, Math.atan2(delta.x, delta.z), TURN_RATE, dt);
       }
     } else if (a.mode === 'walking') {
       a.mode = 'seated';
     }
     const seated = a.mode === 'seated';
-    const bob = seated ? 0 : Math.abs(Math.sin(performance.now() * 0.012 + a.id)) * 0.05;
-    a.mesh.position.set(a.pos.x, (seated ? -SEATED_DROP : 0) + bob, a.pos.z);
-    if (seated) a.mesh.rotation.y = Math.PI;
+    a.sit += ((seated ? 1 : 0) - a.sit) * (1 - Math.exp(-SIT_RATE * dt));
+    if (seated) a.heading = dampAngle(a.heading, Math.PI, TURN_RATE, dt);
+    const bob = (1 - a.sit) * Math.abs(Math.sin(performance.now() * 0.012 + a.id)) * 0.05;
+    a.mesh.position.set(a.pos.x, -SEATED_DROP * a.sit + bob, a.pos.z);
+    a.mesh.rotation.y = a.heading;
   }
 
   return {

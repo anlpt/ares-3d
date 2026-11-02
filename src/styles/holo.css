@@ -105,6 +105,47 @@
 .hud-lamps span { background: rgba(95, 230, 226, 0.1); }
 .hud-power { font-family: var(--font-mono); font-size: 11px; }
 
+/* Thẻ chương trong phòng P101 dùng cùng khung kính HUD với bảng quanh tòa nhà */
+.card.holo-panel { border-radius: 10px; padding: 24px 26px 20px; }
+.card.holo-panel h2 { text-shadow: 0 0 24px rgba(95, 230, 226, 0.12); }
+.step-no { -webkit-text-stroke: 1px rgba(95, 230, 226, 0.55); text-shadow: 0 0 18px rgba(95, 230, 226, 0.25); }
+.formula {
+  background: var(--holo-faint); color: var(--holo); border: 1px solid var(--holo-faint);
+  font: 500 0.92rem/1.5 var(--font-mono); border-radius: 8px;
+}
+.facts { border-top-color: var(--holo-faint); }
+.facts li b, .calm dd, .readout b, .bar-val, .bar-delta, .topics, .light-notes, .decision,
+.controls output, .inline-control output { font-family: var(--font-mono); }
+.calm, .readout { border-top-color: var(--holo-faint); }
+.calm dt, .readout span { font: 400 9.5px/1.3 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.honest { border-left-color: var(--holo); }
+.bar.is-base { background: rgba(95, 230, 226, 0.22); }
+.bars-key .key-plain::before { background: rgba(95, 230, 226, 0.4); }
+.learn-steps li.is-active { background: var(--holo-faint); }
+.learn-steps li.is-active::before { background: var(--holo); border-color: var(--holo); color: var(--night); box-shadow: 0 0 10px rgba(95, 230, 226, 0.6); }
+.learn-steps li::before { border-color: var(--holo-dim); }
+.topics th, .topics td { border-bottom-color: var(--holo-faint); }
+.pc-grid { stroke: var(--holo-faint); }
+.btn-ghost { border-color: var(--holo-dim); }
+.btn-ghost:hover { border-color: var(--holo); box-shadow: 0 0 14px -4px rgba(95, 230, 226, 0.6); }
+input[type="range"]::-webkit-slider-runnable-track { background: rgba(95, 230, 226, 0.25); }
+input[type="range"]::-webkit-slider-thumb { box-shadow: 0 0 0 1px var(--holo), 0 0 10px rgba(95, 230, 226, 0.6); }
+.check input { accent-color: var(--holo); }
+.plans li { border-color: var(--holo-faint); }
+
+/* Nhãn trong cảnh 3D theo kiểu HUD */
+.scene-label {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.02em;
+  background: rgba(6, 12, 23, 0.8); border-color: var(--holo-faint); border-radius: 4px;
+}
+.scene-label.zone b, .scene-label.node b, .scene-label.station b { color: var(--holo); font-weight: 500; }
+.scene-label.zone.is-on { border-color: rgba(242, 169, 59, 0.6); }
+.scene-label.zone.is-on b { color: var(--lamp); }
+.scene-label.det { color: var(--bone); border-color: rgba(236, 230, 216, 0.25); }
+.scene-label.station.is-active { border-color: var(--holo); background: rgba(95, 230, 226, 0.14); box-shadow: 0 0 12px -2px rgba(95, 230, 226, 0.5); }
+.scene-label.station.is-active i, .scene-label.station.is-active b { color: var(--holo); }
+.scene-label.buffer b { color: var(--holo); }
+
 /* Nhãn tầng trong cảnh */
 .scene-label.floor {
   font: 500 10px/1 var(--font-mono); letter-spacing: 0.08em; color: var(--holo);

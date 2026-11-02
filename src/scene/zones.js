@@ -19,7 +19,7 @@ function buildTiles(layer) {
     tile.position.set(x, 0.015, z);
     const edge = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.PlaneGeometry(w, d)),
-      layer.fade(new THREE.LineBasicMaterial({ color: PALETTE.vision }), 0.35),
+      layer.fade(new THREE.LineBasicMaterial({ color: PALETTE.holo }), 0.55),
     );
     edge.rotation.x = -Math.PI / 2;
     edge.position.set(x, 0.02, z);
@@ -33,7 +33,7 @@ function buildTiles(layer) {
 
 function buildFeet(layer) {
   const geo = new THREE.RingGeometry(0.16, 0.24, 24);
-  const mat = layer.fade(new THREE.MeshBasicMaterial({ color: PALETTE.vision, side: THREE.DoubleSide, depthWrite: false }), 0.9);
+  const mat = layer.fade(new THREE.MeshBasicMaterial({ color: PALETTE.holo, side: THREE.DoubleSide, depthWrite: false }), 0.9);
   return Array.from({ length: MAX_FEET }, () => {
     const ring = new THREE.Mesh(geo, mat);
     ring.rotation.x = -Math.PI / 2;
@@ -51,7 +51,7 @@ function buildColumns(layer) {
     g.position.set(x, 0, z);
     const glass = new THREE.Mesh(
       new THREE.CylinderGeometry(0.42, 0.42, COL_H, 32, 1, true),
-      layer.fade(new THREE.MeshBasicMaterial({ color: PALETTE.vision, side: THREE.DoubleSide, depthWrite: false }), 0.07),
+      layer.fade(new THREE.MeshBasicMaterial({ color: PALETTE.holo, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }), 0.1),
     );
     glass.position.y = COL_H / 2;
     const fillMat = layer.fade(new THREE.MeshBasicMaterial({ color: PALETTE.lamp }), 0.85);
@@ -63,7 +63,7 @@ function buildColumns(layer) {
       r.position.y = frac * COL_H;
       return r;
     };
-    g.add(glass, fill, ring(L.occOnThreshold, PALETTE.lamp), ring(L.occOffThreshold, PALETTE.line));
+    g.add(glass, fill, ring(L.occOnThreshold, PALETTE.lamp), ring(L.occOffThreshold, PALETTE.holo));
     const el = layer.label(makeLabelEl('buffer'));
     const label = new CSS2DObject(el);
     label.position.set(0, COL_H + 0.35, 0);
@@ -81,7 +81,7 @@ export function createZones(scene) {
   const feet = buildFeet(zones);
   const cols = buildColumns(buffers);
   scene.add(zones.group, buffers.group);
-  const off = PALETTE.line.clone();
+  const off = new THREE.Color('#1c4a55');
 
   return {
     zones,

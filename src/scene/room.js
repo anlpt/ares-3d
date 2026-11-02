@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { PALETTE, ROOM } from './palette.js';
 import { DESKS, LAMPS, ZONE_CENTERS, AC_UNITS, CCTV } from './layout.js';
 import { createLayer, radialTexture, damp } from './layer.js';
+import { boxEdgePoints, holoLines, gridPoints } from './holo.js';
 
 const LAMP_Y = ROOM.h - 0.2;
 
@@ -18,33 +19,47 @@ function coneMaterial() {
   });
 }
 
-function buildShell(layer) {
-  const std = (color, opts = {}) => layer.fade(new THREE.MeshStandardMaterial({ color, roughness: 0.92, ...opts }));
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w, 0.12, ROOM.d), std(PALETTE.floor));
-  floor.position.y = -0.06;
-  const back = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w, ROOM.h, 0.14), std(PALETTE.wall));
-  back.position.set(0, ROOM.h / 2, -ROOM.d / 2 - 0.07);
-  const left = new THREE.Mesh(new THREE.BoxGeometry(0.14, ROOM.h, ROOM.d), std(PALETTE.wall));
-  left.position.set(-ROOM.w / 2 - 0.07, ROOM.h / 2, 0);
-  const rightLow = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.9, ROOM.d - 1.4), std(PALETTE.wall));
-  rightLow.position.set(ROOM.w / 2 + 0.07, 0.45, -0.7);
-  const board = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.3, 0.04), std('#202b22', { roughness: 0.6 }));
-  board.position.set(0, 1.65, -ROOM.d / 2 + 0.02);
-  layer.group.add(floor, back, left, rightLow, board);
+const GLASS_WALL = '#0c1a2b';
+const at = (x, y, z) => new THREE.Matrix4().makeTranslation(x, y, z);
 
-  const lineMat = layer.fade(new THREE.LineBasicMaterial({ color: PALETTE.line }), 0.9);
+/** Vỏ phòng: sàn tối có lưới mảnh, tường kính mờ, mọi cạnh viền xanh ngọc như mô hình tòa nhà. */
+function buildShell(layer, edges) {
+  const glassStd = (color, opacity, opts = {}) => layer.fade(new THREE.MeshStandardMaterial({
+    color, roughness: 0.6, metalness: 0.1, depthWrite: opacity >= 1, ...opts,
+  }), opacity);
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(ROOM.w, 0.12, ROOM.d), glassStd('#0a1422', 1));
+  floor.position.y = -0.06;
+  const parts = [
+    { size: [ROOM.w, ROOM.h, 0.14], pos: [0, ROOM.h / 2, -ROOM.d / 2 - 0.07] },
+    { size: [0.14, ROOM.h, ROOM.d], pos: [-ROOM.w / 2 - 0.07, ROOM.h / 2, 0] },
+    { size: [0.14, 0.9, ROOM.d - 1.4], pos: [ROOM.w / 2 + 0.07, 0.45, -0.7] },
+  ];
+  const wallMat = glassStd(GLASS_WALL, 0.72);
+  parts.forEach(({ size, pos }) => {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(...size), wallMat);
+    wall.position.set(...pos);
+    layer.group.add(wall);
+    edges.push(...boxEdgePoints(...size, at(...pos)));
+  });
+  const board = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.3, 0.04), glassStd('#0f2a2c', 1, { emissive: '#0b2a2a' }));
+  board.position.set(0, 1.65, -ROOM.d / 2 + 0.02);
+  edges.push(...boxEdgePoints(5.2, 1.3, 0.04, at(0, 1.65, -ROOM.d / 2 + 0.02)));
+  layer.group.add(floor, board);
+  edges.push(...boxEdgePoints(ROOM.w, ROOM.h, ROOM.d, at(0, ROOM.h / 2, 0)));
+
   const mullions = [];
-  for (let i = 0; i <= 7; i += 1) {
+  for (let i = 1; i < 7; i += 1) {
     const x = -ROOM.w / 2 + (ROOM.w / 7) * i;
     mullions.push(x, 0, ROOM.d / 2, x, ROOM.h, ROOM.d / 2);
   }
-  [0, 0.9, ROOM.h].forEach((y) => mullions.push(-ROOM.w / 2, y, ROOM.d / 2, ROOM.w / 2, y, ROOM.d / 2));
-  const mg = new THREE.BufferGeometry();
-  mg.setAttribute('position', new THREE.Float32BufferAttribute(mullions, 3));
-  layer.group.add(new THREE.LineSegments(mg, lineMat));
+  mullions.push(-ROOM.w / 2, 0.9, ROOM.d / 2, ROOM.w / 2, 0.9, ROOM.d / 2);
+  layer.group.add(
+    holoLines(layer, mullions, { opacity: 0.22 }),
+    holoLines(layer, gridPoints(ROOM.w, ROOM.d, 1, 0.012), { opacity: 0.07, boost: 1 }),
+  );
 
   const glassMat = layer.fade(new THREE.MeshBasicMaterial({
-    color: PALETTE.sun, transparent: true, opacity: 0.03, depthWrite: false, side: THREE.DoubleSide,
+    color: PALETTE.holo, transparent: true, opacity: 0.03, depthWrite: false, side: THREE.DoubleSide,
   }), 0.03);
   const glass = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.h), glassMat);
   glass.position.set(0, ROOM.h / 2, ROOM.d / 2);
@@ -52,24 +67,31 @@ function buildShell(layer) {
   return { glassMat };
 }
 
-function buildFurniture(layer) {
-  const deskMat = layer.fade(new THREE.MeshStandardMaterial({ color: PALETTE.desk, roughness: 0.7 }));
-  const desks = new THREE.InstancedMesh(new THREE.BoxGeometry(1.25, 0.06, 0.6), deskMat, DESKS.length);
-  const legs = new THREE.InstancedMesh(new THREE.BoxGeometry(1.15, 0.7, 0.05), deskMat, DESKS.length);
-  const chairs = new THREE.InstancedMesh(new THREE.BoxGeometry(0.45, 0.45, 0.42), deskMat, DESKS.length);
+/** Bàn ghế khối kính tối, cạnh sáng mảnh; thiết bị (điều hòa, camera) viền rõ hơn. */
+function buildFurniture(layer, edges, deviceEdges) {
+  const deskMat = layer.fade(new THREE.MeshStandardMaterial({ color: '#10213a', roughness: 0.85, metalness: 0.05 }));
+  const pieces = [
+    { size: [1.25, 0.06, 0.6], y: 0.75, dz: 0 },
+    { size: [1.15, 0.7, 0.05], y: 0.36, dz: -0.25 },
+    { size: [0.45, 0.45, 0.42], y: 0.22, dz: 0.62 },
+  ];
   const m = new THREE.Matrix4();
-  DESKS.forEach((d, i) => {
-    desks.setMatrixAt(i, m.makeTranslation(d.x, 0.75, d.z));
-    legs.setMatrixAt(i, m.makeTranslation(d.x, 0.36, d.z - 0.25));
-    chairs.setMatrixAt(i, m.makeTranslation(d.x, 0.22, d.z + 0.62));
+  pieces.forEach(({ size, y, dz }) => {
+    const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(...size), deskMat, DESKS.length);
+    DESKS.forEach((d, i) => {
+      m.makeTranslation(d.x, y, d.z + dz);
+      mesh.setMatrixAt(i, m);
+      edges.push(...boxEdgePoints(...size, m));
+    });
+    layer.group.add(mesh);
   });
-  layer.group.add(desks, legs, chairs);
 
-  const devMat = layer.fade(new THREE.MeshStandardMaterial({ color: '#2b3546', roughness: 0.5 }));
+  const devMat = layer.fade(new THREE.MeshStandardMaterial({ color: '#13283f', roughness: 0.4, emissive: '#0a2230' }));
   AC_UNITS.forEach((u) => {
     const ac = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.34, 0.26), devMat);
     ac.position.set(u.x, u.y, u.z);
     layer.group.add(ac);
+    deviceEdges.push(...boxEdgePoints(1.15, 0.34, 0.26, at(u.x, u.y, u.z)));
   });
   const cam = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.34), devMat);
   cam.position.set(CCTV.x, CCTV.y, CCTV.z);
@@ -108,8 +130,11 @@ function buildLamps(layer) {
 /** @param {THREE.Scene} scene */
 export function createRoom(scene) {
   const layer = createLayer('room');
-  const { glassMat } = buildShell(layer);
-  buildFurniture(layer);
+  const edges = [];
+  const deviceEdges = [];
+  const { glassMat } = buildShell(layer, edges);
+  buildFurniture(layer, edges, deviceEdges);
+  layer.group.add(holoLines(layer, edges, { opacity: 0.32 }), holoLines(layer, deviceEdges, { opacity: 0.8, boost: 1.5 }));
   const { lamps, areas } = buildLamps(layer);
 
   const sun = new THREE.DirectionalLight(PALETTE.sun, 0);
@@ -139,10 +164,10 @@ export function createRoom(scene) {
         l.poolMat.opacity = 0.32 * k * mix;
       });
       areas.forEach((a, i) => {
-        a.intensity = (shown.pwm[i] / 100) * 7 * mix;
+        a.intensity = (shown.pwm[i] / 100) * 3 * mix;
       });
       sun.intensity = shown.daylight * 1.3 * mix;
-      glassMat.opacity = (0.025 + shown.daylight * 0.06) * mix;
+      glassMat.opacity = (0.012 + shown.daylight * 0.012) * mix;
     },
     getShownPwm: () => [...shown.pwm],
   };

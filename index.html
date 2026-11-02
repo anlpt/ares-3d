@@ -121,7 +121,7 @@
     </section>
 
     <section class="chapter" data-chapter="see" aria-labelledby="h-see">
-      <div class="card">
+      <div class="card holo-panel">
         <p class="step-no">1</p>
         <h2 id="h-see">Camera đếm người, không nhận mặt</h2>
         <p>Một camera ở góc phòng gửi khung hình cho YOLO. Model chỉ tìm lớp <em>người</em>, chạy ở luồng riêng nên không làm chậm vòng điều khiển. Mỗi khung khoá trong hộp trắng là một người được nhìn thấy, kèm độ tin cậy.</p>
@@ -134,7 +134,7 @@
     </section>
 
     <section class="chapter" data-chapter="zones" aria-labelledby="h-zones">
-      <div class="card">
+      <div class="card holo-panel">
         <p class="step-no">2</p>
         <h2 id="h-zones">Mỗi người thuộc về một vùng</h2>
         <p>ARES lấy điểm giữa cạnh dưới của hộp, tức chỗ chân chạm sàn, rồi xem điểm đó nằm trong đa giác vùng nào. Phòng P101 chia 2 × 2, mỗi vùng 10 chỗ, cả phòng tối đa 40 người.</p>
@@ -143,7 +143,7 @@
     </section>
 
     <section class="chapter" data-chapter="buffer" aria-labelledby="h-buffer">
-      <div class="card">
+      <div class="card holo-panel">
         <p class="step-no">3</p>
         <h2 id="h-buffer">Một lần nhìn nhầm không bật đèn</h2>
         <p>Số người không đi thẳng vào bộ điều khiển. Mỗi vùng có một cột trung bình 30 giây cho đèn (điều hòa dùng 10 phút). Vùng chỉ được coi là có người khi cột vượt <span class="ink-lamp">vòng 0,35</span>, và chỉ hết người khi tụt dưới <span class="ink-muted">vòng 0,15</span>.</p>
@@ -152,7 +152,7 @@
     </section>
 
     <section class="chapter" data-chapter="light" aria-labelledby="h-light">
-      <div class="card">
+      <div class="card holo-panel">
         <p class="step-no">4</p>
         <h2 id="h-light">Đèn chỉ bù phần nắng còn thiếu</h2>
         <p>Vùng có người được giữ 400 lux trên mặt bàn (450 lux khi hơn 8 người). Vùng trống quá 3 phút về mức nền 10–15 %, cả phòng trống quá 3 phút thì tắt. Hai vùng cạnh mặt kính nhận nắng nên đèn tự dịu đi.</p>
@@ -166,7 +166,7 @@
     </section>
 
     <section class="chapter" data-chapter="cool" aria-labelledby="h-cool">
-      <div class="card card-wide">
+      <div class="card card-wide holo-panel">
         <p class="step-no">5</p>
         <h2 id="h-cool">Phòng mát sẵn trước khi lớp vào</h2>
         <p>ARES biết lịch học và thói quen của phòng, nên bật điều hòa sớm đúng bằng thời gian phòng cần để nguội. Sáng nay trời 34 °C, phòng đang 30,5 °C: cần bật trước <b id="precoolLead">–</b>.</p>
@@ -183,7 +183,7 @@
     </section>
 
     <section class="chapter chapter-long" data-chapter="learn" aria-labelledby="h-learn">
-      <div class="card">
+      <div class="card holo-panel">
         <p class="step-no">6</p>
         <h2 id="h-learn">Ảnh khó được người duyệt, model học lại mỗi đêm</h2>
         <ol class="learn-steps">
@@ -197,7 +197,7 @@
     </section>
 
     <section class="chapter" data-chapter="link" aria-labelledby="h-link">
-      <div class="card">
+      <div class="card holo-panel">
         <p class="step-no">7</p>
         <h2 id="h-link">Hai bo mạch nói chuyện qua MQTT</h2>
         <p>ESP32 thứ nhất đo nhiệt độ, độ ẩm và ánh sáng rồi gửi về ARES. ARES gửi lại lệnh cho ESP32 thứ hai: phần trăm sáng của 4 vùng đèn và lệnh IR cho điều hòa.</p>
@@ -214,7 +214,7 @@
     </section>
 
     <section class="chapter" data-chapter="result" aria-labelledby="h-result">
-      <div class="card card-wide">
+      <div class="card card-wide holo-panel">
         <p class="step-no">8</p>
         <h2 id="h-result">Bốn ngày chạy thử trên mô hình</h2>
         <p>So với cách vận hành thường gặp: bật hết đèn và điều hòa 25 °C từ 30 phút trước buổi đầu đến 30 phút sau buổi cuối.</p>
@@ -256,7 +256,7 @@
     </section>
 
     <section class="chapter chapter-sandbox" data-chapter="sandbox" aria-labelledby="h-sandbox">
-      <div class="card card-sandbox" id="sandbox">
+      <div class="card card-sandbox holo-panel" id="sandbox">
         <h2 id="h-sandbox">Tự điều khiển một ngày trong P101</h2>
         <p class="small">Bấm vào sàn để thêm người, bấm vào một người để mời ra. Bộ điều khiển trong trang này chạy đúng các công thức của ARES.</p>
         <div class="controls">
@@ -286,7 +286,7 @@
     </section>
 
     <section class="chapter chapter-scale" data-chapter="scale" aria-labelledby="h-scale">
-      <div class="card card-wide">
+      <div class="card card-wide holo-panel">
         <h2 id="h-scale">Từ một phòng đến cả tòa nhà</h2>
         <p>Cùng nguyên lý đó nhân lên từng tầng: ARES học đường tiêu thụ riêng của mỗi phòng, dự báo phụ tải, chỉ ra phòng đang tốn điện bất thường và nói bằng lời nên làm gì trước.</p>
         <ul class="plans">

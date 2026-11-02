@@ -1,8 +1,9 @@
 // Người trong phòng: đi từ cửa vào chỗ ngồi, đứng dậy ra về. Vị trí chân quyết định vùng (giống ARES).
 import * as THREE from 'three';
-import { PALETTE, ROOM } from './palette.js';
+import { ROOM } from './palette.js';
 import { SEATS, DOOR, AISLE_X, zoneOf } from './layout.js';
 import { createLayer } from './layer.js';
+import { fresnelMaterial } from './holo.js';
 
 const WALK_SPEED = 2.4;
 const SPAWN_GAP_S = 0.22;
@@ -42,9 +43,8 @@ const pathIn = (seat) => [
 /** @param {THREE.Scene} scene */
 export function createPeople(scene) {
   const layer = createLayer('people');
-  const bodyMat = layer.fade(new THREE.MeshStandardMaterial({
-    color: PALETTE.vision, roughness: 0.55, emissive: PALETTE.vision, emissiveIntensity: 0.08,
-  }));
+  // Người dạng hologram: thân trong, viền sáng xanh ngọc — cùng ngôn ngữ với mô hình tòa nhà.
+  const bodyMat = fresnelMaterial();
   scene.add(layer.group);
 
   /** @type {Array<{id:number, mesh:THREE.Group, pos:THREE.Vector3, path:THREE.Vector3[], seat:object, mode:string, conf:number, wait:number}>} */
@@ -130,6 +130,7 @@ export function createPeople(scene) {
       return Boolean(agent);
     },
     update(dt) {
+      bodyMat.uniforms.uMix.value = layer.mix;
       agents.forEach((a) => stepAgent(a, dt));
       const gone = agents.filter((a) => a.mode === 'leaving' && a.path.length === 0);
       if (gone.length > 0) {

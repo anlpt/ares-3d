@@ -28,9 +28,9 @@ export function createNetwork(scene) {
   Object.entries(NODES).forEach(([key, n]) => {
     const isBoard = key === 'sensor' || key === 'actuator';
     const geo = isBoard ? new THREE.BoxGeometry(0.7, 0.08, 0.45) : new THREE.OctahedronGeometry(0.42, 0);
-    const color = key === 'ares' ? PALETTE.lamp : PALETTE.vision;
+    const color = key === 'ares' ? PALETTE.lamp : PALETTE.holo;
     const mesh = new THREE.Mesh(geo, layer.fade(new THREE.MeshStandardMaterial({
-      color, emissive: color, emissiveIntensity: key === 'ares' ? 0.9 : 0.25, roughness: 0.4,
+      color, emissive: color, emissiveIntensity: key === 'ares' ? 0.9 : 0.55, roughness: 0.4,
     }), 1));
     mesh.position.copy(v(key));
     const el = layer.label(makeLabelEl('node', `<b>${n.title}</b><span>${n.sub}</span>`));

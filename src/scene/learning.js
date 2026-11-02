@@ -38,7 +38,7 @@ function cloud(layer) {
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = layer.fade(new THREE.PointsMaterial({ color: PALETTE.vision, size: 0.07, depthWrite: false }), 0.9);
+  const mat = layer.fade(new THREE.PointsMaterial({ color: PALETTE.holo, size: 0.08, depthWrite: false }), 0.9);
   const g = new THREE.Group();
   g.add(new THREE.Points(geo, mat));
   let timer = 0;
@@ -70,7 +70,7 @@ function verdicts(layer) {
 
 function trainer(layer) {
   const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 1),
-    layer.fade(new THREE.MeshBasicMaterial({ color: PALETTE.cool, wireframe: true }), 0.75));
+    layer.fade(new THREE.MeshBasicMaterial({ color: PALETTE.holo, wireframe: true }), 0.8));
   return { g: m, tick: (t) => { m.rotation.set(t * 0.6, t * 0.9, 0); } };
 }
 
@@ -100,7 +100,7 @@ export function createLearning(scene) {
   const curve = new THREE.EllipseCurve(0, 0, RADIUS, RADIUS, 0, Math.PI * 2);
   const pts = curve.getPoints(160).map((p) => new THREE.Vector3(p.x, 0, p.y));
   const ringGeo = new THREE.BufferGeometry().setFromPoints(pts);
-  const ringMat = layer.fade(new THREE.LineDashedMaterial({ color: PALETTE.vision, dashSize: 0.3, gapSize: 0.2 }), 0.45);
+  const ringMat = layer.fade(new THREE.LineDashedMaterial({ color: PALETTE.holo, dashSize: 0.3, gapSize: 0.2 }), 0.7);
   const ring = new THREE.Line(ringGeo, ringMat);
   ring.computeLineDistances();
   layer.group.add(ring);

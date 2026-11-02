@@ -1,0 +1,35 @@
+/* Màu theo ngữ nghĩa — khớp src/scene/palette.js.
+   lamp = ánh sáng/điện năng, cool = làm mát, doubt = ca không chắc (học chủ động), bone = thị giác máy. */
+:root {
+  color-scheme: dark;
+  --night: #0a0f16;
+  --night-2: #101823;
+  --pane: rgba(10, 15, 22, 0.74);
+  --pane-line: rgba(236, 230, 216, 0.09);
+  --bone: #ece6d8;
+  --text: #d8d3c7;
+  --text-2: #a9b1bd;
+  --text-3: #727d8e;
+  --lamp: #f2a93b;
+  --lamp-soft: rgba(242, 169, 59, 0.14);
+  --cool: #7cc6e8;
+  --doubt: #e26d9c;
+  --line: #3a465a;
+
+  --font-display: "Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --text-sm: 0.875rem;
+  --text-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);
+  --text-h2: clamp(1.75rem, 1.2rem + 1.8vw, 2.5rem);
+  --text-hero: clamp(2.9rem, 1rem + 6.2vw, 6.6rem);
+
+  --gutter: clamp(16px, 4.5vw, 80px);
+  --card-w: min(460px, 38vw);
+  --r-pane: 16px;
+  --r-ctl: 10px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms;
+  --dur: 320ms;
+}

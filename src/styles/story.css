@@ -1,0 +1,124 @@
+/* Khung kể chuyện: thanh trên, thanh chương bên phải, các chương có thẻ chữ dính khi cuộn. */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px var(--gutter);
+  pointer-events: none;
+}
+.topbar > * { pointer-events: auto; }
+.wordmark {
+  font: 800 1.35rem/1 var(--font-display); letter-spacing: 0.02em; color: var(--bone);
+}
+.topbar-room { color: var(--text-3); font-size: var(--text-sm); margin-right: auto; }
+
+.rail {
+  position: fixed; right: var(--gutter); top: 76px; z-index: 10;
+  padding: 8px 12px 8px 4px; border-radius: 12px;
+  background: rgba(10, 15, 22, 0.55); backdrop-filter: blur(10px);
+  border: 1px solid var(--pane-line);
+}
+.rail ol { list-style: none; margin: 0; padding: 0; counter-reset: rail; display: grid; gap: 2px; }
+.rail li { counter-increment: rail; }
+.rail button {
+  display: grid; grid-template-columns: 1.6em 1fr; align-items: center; justify-items: end;
+  width: 100%; min-height: 30px; padding: 2px 0 2px 12px;
+  background: none; border: 0; cursor: pointer;
+  color: var(--text-3); font: 400 0.8rem/1.2 var(--font-body); text-align: right;
+  transition: color var(--dur-fast);
+}
+.rail button::before {
+  content: counter(rail); font-variant-numeric: tabular-nums; justify-self: start;
+  color: var(--text-3); font-size: 0.72rem;
+}
+.rail li:first-child button::before { content: "·"; }
+.rail button span, .rail button { white-space: nowrap; }
+.rail button:hover { color: var(--bone); }
+.rail button[aria-current="true"] { color: var(--lamp); font-weight: 600; }
+.rail button[aria-current="true"]::before { color: var(--lamp); }
+
+main { position: relative; z-index: 5; pointer-events: none; }
+
+.chapter {
+  min-height: 165vh;
+  padding: 18vh var(--gutter) 0;
+}
+.chapter-long { min-height: 320vh; }
+.chapter-sandbox { min-height: 150vh; }
+
+.card {
+  position: sticky; top: 13vh;
+  width: var(--card-w);
+  padding: 26px 28px 22px;
+  background: var(--pane);
+  border: 1px solid var(--pane-line);
+  border-radius: var(--r-pane);
+  backdrop-filter: blur(14px) saturate(1.2);
+  pointer-events: auto;
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.8);
+  max-height: calc(100vh - 13vh - 16px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.card h2 { font-size: var(--text-h2); margin-bottom: 14px; }
+.card-wide { --card-w: min(560px, 44vw); }
+
+.step-no {
+  font: 800 4.2rem/0.8 var(--font-display);
+  color: transparent; -webkit-text-stroke: 1px rgba(236, 230, 216, 0.3);
+  margin: 0 0 10px; letter-spacing: -0.04em;
+}
+
+/* Mở đầu: chữ lớn đặt thẳng trên cảnh, không có khung. */
+.chapter-hero { min-height: 140vh; padding-top: 0; }
+.card-hero {
+  top: 0; min-height: 100vh; width: min(760px, 62vw);
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 90px 0 48px; background: none; border: 0; backdrop-filter: none; box-shadow: none;
+}
+.chapter-hero::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(10, 15, 22, 0.85) 0%, rgba(10, 15, 22, 0.35) 45%, transparent 70%);
+  opacity: var(--hero-veil, 1); transition: opacity 0.8s var(--ease-out);
+}
+body:not([data-chapter="hero"]) .chapter-hero::before { --hero-veil: 0; }
+.hero-title {
+  font-size: var(--text-hero); font-weight: 800; line-height: 0.92; letter-spacing: -0.035em;
+  margin-bottom: 28px;
+}
+.hero-title span { display: block; }
+.hero-title span:nth-child(2) { padding-left: 0.55em; }
+.hero-title span:nth-child(3) { padding-left: 1.1em; }
+.lead { font-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.25rem); color: var(--text); max-width: 46ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 18px; }
+.caption { color: var(--text-3); font-size: var(--text-sm); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-title span { clip-path: inset(0 0 100% 0); transform: translateY(0.25em); }
+  body.is-ready .hero-title span {
+    clip-path: inset(0 0 -10% 0); transform: none;
+    transition: clip-path 1.1s var(--ease-out), transform 1.1s var(--ease-out);
+  }
+  body.is-ready .hero-title span:nth-child(2) { transition-delay: 0.12s; }
+  body.is-ready .hero-title span:nth-child(3) { transition-delay: 0.24s; }
+}
+
+.footer {
+  position: relative; z-index: 5; padding: 40px var(--gutter) 56px;
+  color: var(--text-3); font-size: var(--text-sm);
+}
+
+@media (max-width: 899px) {
+  :root { --card-w: 100%; }
+  .card-wide { --card-w: 100%; }
+  .rail { display: none; }
+  .topbar-room { display: none; }
+  .chapter { padding-top: 42svh; min-height: 150vh; }
+  .wordmark { margin-right: auto; }
+  .card {
+    top: 42svh; max-height: calc(58svh - 12px); padding: 20px 20px 16px;
+  }
+  .card-hero { width: 100%; min-height: 100svh; justify-content: flex-end; padding-bottom: 32px; max-height: none; }
+  .chapter-hero { padding-top: 0; }
+  .chapter-hero::before { background: linear-gradient(0deg, rgba(10, 15, 22, 0.92) 10%, rgba(10, 15, 22, 0.2) 55%, transparent 75%); }
+  .step-no { font-size: 2.6rem; }
+}

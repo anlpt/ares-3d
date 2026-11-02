@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARES 3D</title>
+  <meta name="description" content="ARES đếm người bằng camera theo từng vùng trong phòng, rồi tự chỉnh đèn và điều hòa. Tham quan hệ thống bằng mô hình 3D tương tác." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap&subset=vietnamese" rel="stylesheet" />
+</head>
+<body data-chapter="hero">
+  <a class="skip" href="#main">Bỏ qua phần mở đầu</a>
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div id="labels" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <span class="wordmark" aria-label="ARES">ARES</span>
+    <span class="topbar-room">Phòng P101</span>
+    <button class="btn btn-ghost" type="button" data-goto="sandbox">Mở mô phỏng</button>
+  </header>
+
+  <nav class="rail" aria-label="Các bước của hệ thống">
+    <ol>
+      <li><button type="button" data-goto="hero">Tòa nhà</button></li>
+      <li><button type="button" data-goto="see">Camera</button></li>
+      <li><button type="button" data-goto="zones">Vùng</button></li>
+      <li><button type="button" data-goto="buffer">Bộ đệm</button></li>
+      <li><button type="button" data-goto="light">Đèn</button></li>
+      <li><button type="button" data-goto="cool">Điều hòa</button></li>
+      <li><button type="button" data-goto="learn">Học chủ động</button></li>
+      <li><button type="button" data-goto="link">MQTT</button></li>
+      <li><button type="button" data-goto="result">Kết quả</button></li>
+      <li><button type="button" data-goto="sandbox">Tự thử</button></li>
+    </ol>
+  </nav>
+
+  <aside id="hud" class="hud is-hidden" aria-label="Số đo mô phỏng hiện tại">
+    <dl>
+      <div><dt>Giờ</dt><dd data-hud="clock">--:--</dd></div>
+      <div><dt>Người</dt><dd data-hud="people">0</dd></div>
+      <div><dt>Trong phòng</dt><dd data-hud="tin">–</dd></div>
+      <div class="hud-wide"><dt>Điều hòa</dt><dd data-hud="ac">–</dd></div>
+    </dl>
+    <div class="hud-lamps" aria-label="Độ sáng đèn 4 vùng">
+      <span data-hud-bar></span><span data-hud-bar></span><span data-hud-bar></span><span data-hud-bar></span>
+    </div>
+    <p class="hud-power"><span>ARES <b data-hud="kw">–</b></span><span>Bật hết <b data-hud="kw-base">–</b></span></p>
+    <p class="hud-note" data-hud="note" aria-live="off"></p>
+  </aside>
+
+  <main id="main">
+    <section class="chapter chapter-hero" data-chapter="hero" aria-labelledby="h-hero">
+      <div class="card card-hero">
+        <h1 id="h-hero" class="hero-title">
+          <span>Đèn và điều hòa</span>
+          <span>chỉ chạy ở nơi</span>
+          <span>có người.</span>
+        </h1>
+        <p class="lead">ARES dùng camera đếm người theo từng vùng trong phòng, rồi tự chỉnh từng dãy đèn và nhiệt độ điều hòa. Cuộn xuống để đi vào phòng P101 và xem hệ thống làm việc.</p>
+        <div class="actions">
+          <button class="btn btn-primary" type="button" data-goto="see">Bắt đầu tham quan</button>
+          <button class="btn btn-ghost" type="button" data-goto="sandbox">Tự điều khiển phòng</button>
+        </div>
+        <p class="caption">Mỗi ô cửa sáng là một phòng đang có người.</p>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="see" aria-labelledby="h-see">
+      <div class="card">
+        <p class="step-no">1</p>
+        <h2 id="h-see">Camera đếm người, không nhận mặt</h2>
+        <p>Một camera ở góc phòng gửi khung hình cho YOLO. Model chỉ tìm lớp <em>người</em>, chạy ở luồng riêng nên không làm chậm vòng điều khiển. Mỗi khung khoá trong hộp trắng là một người được nhìn thấy, kèm độ tin cậy.</p>
+        <p>Hộp <span class="ink-doubt">màu hồng</span> là ca máy chưa chắc (độ tin cậy 0,35–0,55). Những ảnh này sẽ được giữ lại để người duyệt, ở bước 6.</p>
+        <ul class="facts">
+          <li><b>15 khung/giây</b> khi chạy thường, hạ còn 1 khi đang huấn luyện</li>
+          <li><b>Mất camera</b> thì báo mất, không đoán số người</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="zones" aria-labelledby="h-zones">
+      <div class="card">
+        <p class="step-no">2</p>
+        <h2 id="h-zones">Mỗi người thuộc về một vùng</h2>
+        <p>ARES lấy điểm giữa cạnh dưới của hộp, tức chỗ chân chạm sàn, rồi xem điểm đó nằm trong đa giác vùng nào. Phòng P101 chia 2 × 2, mỗi vùng 10 chỗ, cả phòng tối đa 40 người.</p>
+        <p>Vòng tròn dưới chân là điểm được dùng để xếp vùng. Vùng nào có người thì sàn ấm lên.</p>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="buffer" aria-labelledby="h-buffer">
+      <div class="card">
+        <p class="step-no">3</p>
+        <h2 id="h-buffer">Một lần nhìn nhầm không bật đèn</h2>
+        <p>Số người không đi thẳng vào bộ điều khiển. Mỗi vùng có một cột trung bình 30 giây cho đèn (điều hòa dùng 10 phút). Vùng chỉ được coi là có người khi cột vượt <span class="ink-lamp">vòng 0,35</span>, và chỉ hết người khi tụt dưới <span class="ink-muted">vòng 0,15</span>.</p>
+        <p>Khoảng trễ giữa hai ngưỡng giúp đèn không chớp tắt khi số đếm dao động. Và “không có dữ liệu” khác “phòng trống”: mất camera trong giờ học thì ARES coi mọi vùng có người, thà thừa điện còn hơn để lớp tối.</p>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="light" aria-labelledby="h-light">
+      <div class="card">
+        <p class="step-no">4</p>
+        <h2 id="h-light">Đèn chỉ bù phần nắng còn thiếu</h2>
+        <p>Vùng có người được giữ 400 lux trên mặt bàn (450 lux khi hơn 8 người). Vùng trống quá 3 phút về mức nền 10–15 %, cả phòng trống quá 3 phút thì tắt. Hai vùng cạnh mặt kính nhận nắng nên đèn tự dịu đi.</p>
+        <p class="formula" aria-label="Công thức PWM">PWM<sub>t</sub> = PWM<sub>t−1</sub> + 100 · K<sub>p</sub> · e / ΔL<sub>max</sub></p>
+        <label class="inline-control">
+          <span>Kéo để đổi nắng ngoài cửa sổ</span>
+          <input id="lightSky" type="range" min="0" max="100" value="90" />
+          <output id="lightSkyOut" for="lightSky">Nắng chiều</output>
+        </label>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="cool" aria-labelledby="h-cool">
+      <div class="card card-wide">
+        <p class="step-no">5</p>
+        <h2 id="h-cool">Phòng mát sẵn trước khi lớp vào</h2>
+        <p>ARES biết lịch học và thói quen của phòng, nên bật điều hòa sớm đúng bằng thời gian phòng cần để nguội. Sáng nay trời 34 °C, phòng đang 30,5 °C: cần bật trước <b id="precoolLead">–</b>.</p>
+        <figure class="chart">
+          <div id="precoolChart"></div>
+          <figcaption>
+            <span class="key key-ares">Có ARES: <b id="precoolAres">–</b> lúc vào lớp</span>
+            <span class="key key-plain">Bật tay lúc vào lớp: <b id="precoolPlain">–</b></span>
+          </figcaption>
+        </figure>
+        <p class="formula" aria-label="Công thức thời gian bật trước">t<sub>lead</sub> = (T<sub>in</sub> − 25,5) / R<sub>cool</sub> + 0,8 · max(0, T<sub>out</sub> − 30)</p>
+        <p class="small">Khi lớp đã vào, nhiệt độ đặt thay đổi theo số người, có vùng chết ±0,7 °C và cách nhau ít nhất 5 phút giữa hai lệnh IR. Vào lớp 15 phút mà phòng vẫn trống thì máy tự tắt.</p>
+      </div>
+    </section>
+
+    <section class="chapter chapter-long" data-chapter="learn" aria-labelledby="h-learn">
+      <div class="card">
+        <p class="step-no">6</p>
+        <h2 id="h-learn">Ảnh khó được người duyệt, model học lại mỗi đêm</h2>
+        <ol class="learn-steps">
+          <li data-learn-step class="is-active"><b>Ảnh khó.</b> Phát hiện có độ tin cậy 0,35–0,55 được lưu nguyên khung gốc.</li>
+          <li data-learn-step><b>Lọc trùng PCA.</b> Ảnh quá giống ảnh đã có bị bỏ trước khi tới tay người.</li>
+          <li data-learn-step><b>Người duyệt.</b> Duyệt, sửa hộp hoặc loại. Chỉ nhãn do người xác nhận mới được dùng để học.</li>
+          <li data-learn-step><b>Huấn luyện đêm.</b> 00:00, luôn từ checkpoint gốc, trộn 70 % dữ liệu cũ với 30 % mới.</li>
+          <li data-learn-step><b>Hoán đổi model.</b> Model mới được nạp ở luồng nền, nhận diện không gián đoạn, quay lui được.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="link" aria-labelledby="h-link">
+      <div class="card">
+        <p class="step-no">7</p>
+        <h2 id="h-link">Hai bo mạch nói chuyện qua MQTT</h2>
+        <p>ESP32 thứ nhất đo nhiệt độ, độ ẩm và ánh sáng rồi gửi về ARES. ARES gửi lại lệnh cho ESP32 thứ hai: phần trăm sáng của 4 vùng đèn và lệnh IR cho điều hòa.</p>
+        <table class="topics">
+          <caption class="sr-only">Các topic MQTT</caption>
+          <tbody>
+            <tr><th scope="row">ares/P101/sensors</th><td>nhiệt độ, độ ẩm, lux từng vùng</td></tr>
+            <tr><th scope="row">ares/P101/cmd/led</th><td>{"pwm":[45,50,80,15]}</td></tr>
+            <tr><th scope="row">ares/P101/cmd/ac</th><td>{"power":1,"temp":25,"fan":2}</td></tr>
+          </tbody>
+        </table>
+        <p class="small">Lệnh được giữ lại trên broker (retain), nên bo mạch khởi động lại sẽ nhận ngay trạng thái mới nhất.</p>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="result" aria-labelledby="h-result">
+      <div class="card card-wide">
+        <p class="step-no">8</p>
+        <h2 id="h-result">Bốn ngày chạy thử trên mô hình</h2>
+        <p>So với cách vận hành thường gặp: bật hết đèn và điều hòa 25 °C từ 30 phút trước buổi đầu đến 30 phút sau buổi cuối.</p>
+        <div class="bars" role="table" aria-label="Điện năng 4 ngày, ARES so với bật hết">
+          <div class="bar-row" role="row">
+            <span role="rowheader">Đèn</span>
+            <div class="bar-pair" role="cell">
+              <i class="bar is-base" style="--w:15.8%"></i><i class="bar is-ares" style="--w:6.6%"></i>
+            </div>
+            <span role="cell" class="bar-val">2,44 / 5,88 kWh</span>
+            <b role="cell" class="bar-delta">−58,5 %</b>
+          </div>
+          <div class="bar-row" role="row">
+            <span role="rowheader">Điều hòa</span>
+            <div class="bar-pair" role="cell">
+              <i class="bar is-base" style="--w:84.2%"></i><i class="bar is-ares" style="--w:81.4%"></i>
+            </div>
+            <span role="cell" class="bar-val">30,20 / 31,24 kWh</span>
+            <b role="cell" class="bar-delta">−3,3 %</b>
+          </div>
+          <div class="bar-row is-total" role="row">
+            <span role="rowheader">Tổng</span>
+            <div class="bar-pair" role="cell">
+              <i class="bar is-base" style="--w:100%"></i><i class="bar is-ares" style="--w:87.9%"></i>
+            </div>
+            <span role="cell" class="bar-val">32,64 / 37,12 kWh</span>
+            <b role="cell" class="bar-delta">−12,1 %</b>
+          </div>
+        </div>
+        <p class="bars-key"><span class="key key-ares">ARES</span><span class="key key-plain">Bật hết</span></p>
+        <dl class="calm">
+          <div><dt>Vùng đổi sáng ↔ tắt</dt><dd>240 → 96 lần</dd></div>
+          <div><dt>PWM đổi chiều</dt><dd>6 026 → 504 lần</dd></div>
+          <div><dt>Điều hòa bật/tắt</dt><dd>8 → 4 lần</dd></div>
+          <div><dt>Có người mà trên 26,5 °C</dt><dd>0 phút</dd></div>
+        </dl>
+        <p class="honest">Đây là số từ mô phỏng: vật lý phòng, công suất máy và đường đi của người đều là giả định, dùng để kiểm tra logic điều khiển. Chưa phải số đo của một phòng thật.</p>
+      </div>
+    </section>
+
+    <section class="chapter chapter-sandbox" data-chapter="sandbox" aria-labelledby="h-sandbox">
+      <div class="card card-sandbox" id="sandbox">
+        <h2 id="h-sandbox">Tự điều khiển một ngày trong P101</h2>
+        <p class="small">Bấm vào sàn để thêm người, bấm vào một người để mời ra. Bộ điều khiển trong trang này chạy đúng các công thức của ARES.</p>
+        <div class="controls">
+          <label><span>Giờ <output data-sb="minute-out">09:00</output></span>
+            <input data-sb="minute" type="range" min="300" max="1260" step="5" value="540" /></label>
+          <label><span>Số người <output data-sb="people-out">12 người</output></span>
+            <input data-sb="people" type="range" min="0" max="24" step="1" value="12" /></label>
+          <label><span>Trời <output data-sb="sky-out">Nắng</output></span>
+            <input data-sb="sky" type="range" min="0" max="100" value="60" /></label>
+          <label><span>Ngoài trời <output data-sb="tout-out">33 °C</output></span>
+            <input data-sb="tout" type="range" min="24" max="39" step="0.5" value="33" /></label>
+        </div>
+        <div class="toggles">
+          <button class="btn btn-primary" type="button" data-sb="run" aria-pressed="false">Chạy đồng hồ</button>
+          <label class="check"><input type="checkbox" data-sb="compare" /> So sánh: bật hết đèn</label>
+          <label class="check"><input type="checkbox" data-sb="camera" /> Giả lập mất camera</label>
+          <button class="btn btn-ghost" type="button" data-sb="reset">Đặt lại</button>
+        </div>
+        <div class="readout">
+          <div><span>ARES đã dùng</span><b data-sb="kwh-ares">0 kWh</b></div>
+          <div><span>Nếu bật hết</span><b data-sb="kwh-base">0 kWh</b></div>
+          <div class="readout-saving"><b data-sb="saving">–</b></div>
+        </div>
+        <p class="decision" data-sb="note" aria-live="polite"></p>
+        <pre class="light-notes" data-sb="light-notes"></pre>
+      </div>
+    </section>
+
+    <section class="chapter chapter-scale" data-chapter="scale" aria-labelledby="h-scale">
+      <div class="card card-wide">
+        <h2 id="h-scale">Từ một phòng đến cả tòa nhà</h2>
+        <p>Cùng nguyên lý đó nhân lên từng tầng: ARES học đường tiêu thụ riêng của mỗi phòng, dự báo phụ tải, chỉ ra phòng đang tốn điện bất thường và nói bằng lời nên làm gì trước.</p>
+        <ul class="plans">
+          <li><h3>Smart Home</h3><p class="price">149.000 đ<span>/tháng</span></p><p>Một căn nhà, tối đa 15 phòng.</p></li>
+          <li><h3>Văn phòng</h3><p class="price">890.000 đ<span>/tháng</span></p><p>Một mặt bằng đến 1.000 m², có đếm người.</p></li>
+          <li class="is-featured"><h3>Tòa nhà</h3><p class="price">7.900.000 đ<span>/tháng</span></p><p>Không giới hạn mặt bằng, xếp hạng tiết kiệm giữa khách thuê.</p></li>
+          <li><h3>Doanh nghiệp</h3><p class="price">Liên hệ</p><p>Nhiều tòa, API riêng, báo cáo phát thải.</p></li>
+        </ul>
+        <p class="small">Giá chưa gồm VAT, mọi gói miễn phí 30 ngày đầu.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/blm2006/ARES" rel="noopener" target="_blank">Xem mã nguồn ARES</a>
+          <a class="btn btn-ghost" href="https://github.com/namly2610-prog/web-ares" rel="noopener" target="_blank">Xem trang web ARES</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Bản demo. Số liệu tòa nhà và giá gói lấy từ trang web ARES; số tiết kiệm lấy từ mô phỏng trong ARES_UPGRADE.md, không phải số đo thực tế.</p>
+  </footer>
+
+  <p class="no-webgl-note">Trình duyệt này không bật WebGL nên mô hình 3D bị ẩn. Nội dung vẫn đọc được bình thường.</p>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

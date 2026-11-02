@@ -7,7 +7,7 @@
   <meta name="description" content="ARES đếm người bằng camera theo từng vùng trong phòng, rồi tự chỉnh đèn và điều hòa. Tham quan hệ thống bằng mô hình 3D tương tác." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap&subset=vietnamese" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Be+Vietnam+Pro:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap&subset=vietnamese" rel="stylesheet" />
 </head>
 <body data-chapter="hero">
   <a class="skip" href="#main">Bỏ qua phần mở đầu</a>
@@ -35,7 +35,8 @@
     </ol>
   </nav>
 
-  <aside id="hud" class="hud is-hidden" aria-label="Số đo mô phỏng hiện tại">
+  <aside id="hud" class="hud holo-panel is-hidden" aria-label="Số đo mô phỏng hiện tại">
+    <header class="holo-head"><span>P101</span><span>trực tiếp</span></header>
     <dl>
       <div><dt>Giờ</dt><dd data-hud="clock">--:--</dd></div>
       <div><dt>Người</dt><dd data-hud="people">0</dd></div>
@@ -48,6 +49,59 @@
     <p class="hud-power"><span>ARES <b data-hud="kw">–</b></span><span>Bật hết <b data-hud="kw-base">–</b></span></p>
     <p class="hud-note" data-hud="note" aria-live="off"></p>
   </aside>
+
+
+  <div id="callouts" class="callouts">
+    <svg class="callout-lines" aria-hidden="true"></svg>
+
+    <section class="holo-panel callout-telemetry" data-callout="telemetry" aria-label="Điện theo tầng">
+      <header class="holo-head"><span>Đo theo tầng</span><span>kW</span></header>
+      <table class="tele">
+        <thead><tr><th scope="col">Tầng</th><th scope="col">kW</th><th scope="col">Phòng</th><th scope="col"><span class="sr-only">Mức</span></th></tr></thead>
+        <tbody data-tele-rows></tbody>
+      </table>
+    </section>
+
+    <section class="holo-panel callout-occupancy" data-callout="occupancy" aria-label="Hiện diện theo tầng">
+      <header class="holo-head"><span>Hiện diện AI</span><span data-occ-total>–</span></header>
+      <div class="occ-bars" data-occ-bars>
+      </div>
+      <div class="occ-axis"><span>L01</span><span data-occ-top>L09</span></div>
+    </section>
+
+    <section class="holo-panel callout-p101" data-callout="p101" aria-label="Phòng P101">
+      <header class="holo-head"><span>Phòng P101</span><span>trực tiếp</span></header>
+      <div class="gauge-row">
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" class="gauge-track" />
+            <circle cx="50" cy="50" r="42" class="gauge-fill" data-p101-ring />
+            <circle cx="50" cy="50" r="34" class="gauge-inner" />
+          </svg>
+          <p class="gauge-value"><b data-p101-kw>–</b><span>kW</span></p>
+        </div>
+        <dl class="spec">
+          <div><dt>Nhiệt độ</dt><dd data-p101-temp>–</dd></div>
+          <div><dt>Người</dt><dd data-p101-people>–</dd></div>
+        </dl>
+      </div>
+      <p class="holo-hint">Bấm vào P101 trên tòa nhà để đi vào phòng</p>
+    </section>
+
+    <section class="holo-panel callout-energy" data-callout="energy" aria-label="Tiết kiệm điện mô phỏng">
+      <header class="holo-head"><span>Năng lượng</span><span>4 ngày</span></header>
+      <div class="gauge-row">
+        <svg class="gauge gauge-sm" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" class="gauge-track" />
+          <circle cx="50" cy="50" r="42" class="gauge-fill is-lamp" data-energy-ring />
+        </svg>
+        <dl class="spec">
+          <div><dt>So với bật hết</dt><dd class="is-big">−12,1 %</dd></div>
+          <div><dt>Nguồn</dt><dd>mô phỏng</dd></div>
+        </dl>
+      </div>
+    </section>
+  </div>
 
   <main id="main">
     <section class="chapter chapter-hero" data-chapter="hero" aria-labelledby="h-hero">

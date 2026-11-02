@@ -2,7 +2,10 @@
    lamp = ánh sáng/điện năng, cool = làm mát, doubt = ca không chắc (học chủ động), bone = thị giác máy. */
 :root {
   color-scheme: dark;
-  --night: #0a0f16;
+  --night: #060c17;
+  --holo: #5fe6e2;
+  --holo-dim: rgba(95, 230, 226, 0.32);
+  --holo-faint: rgba(95, 230, 226, 0.12);
   --night-2: #101823;
   --pane: rgba(10, 15, 22, 0.74);
   --pane-line: rgba(236, 230, 216, 0.09);
@@ -18,6 +21,7 @@
 
   --font-display: "Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
   --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 
   --text-sm: 0.875rem;
   --text-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);

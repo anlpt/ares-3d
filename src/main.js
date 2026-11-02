@@ -2,6 +2,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/story.css';
 import './styles/panels.css';
+import './styles/holo.css';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
@@ -20,8 +21,12 @@ import { createDirector } from './story/director.js';
 import { createHud } from './ui/hud.js';
 import { createSandbox } from './ui/sandbox.js';
 import { renderPrecoolChart } from './ui/precoolChart.js';
+import { createCallouts } from './ui/callouts.js';
+import * as THREE from 'three';
 
 gsap.registerPlugin(ScrollTrigger);
+// Mỗi lần mở trang bắt đầu từ cảnh tòa nhà, không nhảy giữa chừng câu chuyện.
+if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function hasWebGL() {
@@ -100,6 +105,31 @@ function setupScroll(world, ui) {
   };
   document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => scrollTo(b.dataset.goto)));
   activate(CHAPTERS[0]);
+  return { scrollTo };
+}
+
+const BUILDING_CHAPTERS = new Set(['hero', 'scale']);
+const inBuildingChapter = (world) => BUILDING_CHAPTERS.has(world.director.chapter?.id);
+
+/** Rê chuột lên một tầng để làm nổi tầng đó; bấm vào P101 để bay vào phòng. */
+function setupBuildingPointer(world, ui, scrollTo) {
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const pickAt = (e) => {
+    if (!inBuildingChapter(world)) return null;
+    ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, world.stage.camera);
+    return world.building.pick(ray);
+  };
+  world.canvas.addEventListener('pointermove', (e) => {
+    const hit = pickAt(e);
+    ui.callouts.setHover(hit ? hit.floor : -1);
+    world.canvas.classList.toggle('is-pointing', Boolean(hit?.isP101));
+  });
+  world.canvas.addEventListener('pointerleave', () => ui.callouts.setHover(-1));
+  world.canvas.addEventListener('click', (e) => {
+    if (pickAt(e)?.isP101) scrollTo('see');
+  });
 }
 
 function setupInlineControls(world) {
@@ -134,7 +164,9 @@ function startLoop(world, ui) {
     const state = world.engine.getState();
     const compare = ui.sandbox.compare;
     world.room.update(state, dt, { compare });
-    world.building.update(dt);
+    const occupied = state.inputs.zoneCounts.some((n) => n > 0);
+    world.building.update(dt, { occupied });
+    ui.callouts.update(state, dt, { active: inBuildingChapter(world), mix: world.building.layer.mix });
     world.vision.update(world.people.agents(), dt);
     world.zones.update(state, world.people.agents(), dt);
     world.hvac.update(state, dt);
@@ -158,10 +190,12 @@ function boot() {
       engine: world.engine, people: world.people, director: world.director,
       camera: world.stage.camera, canvas: world.canvas,
     }),
+    callouts: createCallouts(document.getElementById('callouts'), { camera: world.stage.camera, building: world.building }),
   };
   world.people.setTarget(16, [1, 1, 1, 1], { instant: true });
   setupInlineControls(world);
-  setupScroll(world, ui);
+  const { scrollTo } = setupScroll(world, ui);
+  setupBuildingPointer(world, ui, scrollTo);
   startLoop(world, ui);
   if (import.meta.env.DEV) window.__ares = world;
   setTimeout(() => document.body.classList.add('is-ready'), 60);

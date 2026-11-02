@@ -5,7 +5,7 @@ const EVEN = [1, 1, 1, 1];
 export const CHAPTERS = Object.freeze([
   {
     id: 'hero', label: 'Tòa nhà',
-    pose: { pos: [62, 15, 104], target: [4, 2, 0] },
+    pose: { pos: [52, 26, 96], target: [-13, 15, 0] },
     layers: { building: 1, room: 1, people: 1 },
     sim: { minute: 17 * 60 + 5, sky: 0.05, tOut: 31, people: 16, weights: EVEN },
     hud: false,
@@ -72,7 +72,7 @@ export const CHAPTERS = Object.freeze([
   },
   {
     id: 'scale', label: 'Tòa nhà',
-    pose: { pos: [-52, 16, 80], target: [0, 3, 0] },
+    pose: { pos: [-58, 30, 92], target: [-14, 15, 0] },
     layers: { building: 1, room: 1, people: 1 },
     sim: { minute: 17 * 60 + 5, sky: 0.05, tOut: 31, people: 16, weights: EVEN },
     hud: false,

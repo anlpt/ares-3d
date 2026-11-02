@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 
 export const PALETTE = Object.freeze({
-  night: new THREE.Color('#0A0F16'),
+  night: new THREE.Color('#060C17'),
+  holo: new THREE.Color('#5FE6E2'),
   floor: new THREE.Color('#121925'),
   wall: new THREE.Color('#1A2230'),
   desk: new THREE.Color('#263042'),

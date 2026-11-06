@@ -6,6 +6,7 @@ import { radialTexture } from './layer.js';
 const BLOCKS = 190;
 const WINDOW_POINTS = 6500;
 const PLAZA = 110;
+const CLEAR_RADIUS = 175;
 
 function seeded(seed0) {
   let seed = seed0;
@@ -19,10 +20,10 @@ function placeBlocks(rand) {
   const blocks = [];
   while (blocks.length < BLOCKS) {
     const a = rand() * Math.PI * 2;
-    const r = 85 + rand() * 230;
+    // Vành đai quanh tòa nhà, bắt đầu xa hơn mọi vị trí máy quay (kể cả khi xoay 360°) để không khối nào chắn tầm nhìn.
+    const r = CLEAR_RADIUS + rand() * 170;
     const x = Math.cos(a) * r;
-    const z = Math.sin(a) * r - 40;
-    if (z > 60 && Math.abs(x) < 90) continue; // để trống tầm nhìn phía trước tòa nhà
+    const z = Math.sin(a) * r;
     const w = 8 + rand() * 18;
     const d = 8 + rand() * 18;
     const h = 8 + Math.pow(rand(), 1.8) * 95;
@@ -65,6 +66,30 @@ function plazaLines(baseY) {
   return g;
 }
 
+/** Đốm sáng mờ (bokeh) của thành phố xa — giống ảnh chụp đêm có độ sâu trường ảnh nông. */
+function bokeh(layer, rand, baseY) {
+  const tex = radialTexture(64, 'rgba(255,255,255,0.9)', 'rgba(255,255,255,0)');
+  const colors = [new THREE.Color('#ffd49a'), new THREE.Color('#f4f6ff'), PALETTE.holo.clone(), new THREE.Color('#ff9f6b')];
+  return [9, 15, 24].map((size, k) => {
+    const n = 140 - k * 30;
+    const pos = new Float32Array(n * 3);
+    const col = new Float32Array(n * 3);
+    for (let i = 0; i < n; i += 1) {
+      const a = rand() * Math.PI * 2;
+      const r = CLEAR_RADIUS + 20 + rand() * 240;
+      pos.set([Math.cos(a) * r, baseY + 3 + rand() * 70, Math.sin(a) * r], i * 3);
+      const c = colors[Math.floor(rand() * colors.length)].clone().multiplyScalar(0.5 + rand() * 0.6);
+      col.set([c.r, c.g, c.b], i * 3);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return new THREE.Points(g, layer.fade(new THREE.PointsMaterial({
+      size, map: tex, vertexColors: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+    }), 0.55 - k * 0.1));
+  });
+}
+
 /**
  * Thêm thành phố vào cùng lớp với tòa nhà để mờ/hiện cùng nhau.
  * @param {{group:THREE.Group, fade:Function}} layer
@@ -100,5 +125,5 @@ export function createCity(layer, baseY) {
   edge.rotation.x = -Math.PI / 2;
   edge.position.y = baseY + 0.03;
 
-  layer.group.add(ground, grid, edge, mesh, lights);
+  layer.group.add(ground, grid, edge, mesh, lights, ...bokeh(layer, rand, baseY));
 }

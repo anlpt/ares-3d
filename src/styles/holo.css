@@ -49,11 +49,12 @@
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-.callouts .holo-panel { position: absolute; padding: 12px 14px; }
-.callout-telemetry { top: 84px; right: var(--gutter); width: 236px; }
-.callout-energy { top: 84px; right: calc(var(--gutter) + 252px); width: 214px; }
-.callout-occupancy { bottom: 28px; right: calc(var(--gutter) + 272px); width: 200px; }
-.callout-p101 { bottom: 28px; right: var(--gutter); width: 256px; }
+.callouts .holo-panel, .callout-readout { position: absolute; padding: 12px 14px; }
+/* Bố cục khung HUD quanh tòa nhà theo ảnh tham khảo: 4 góc + số đọc ở cạnh phải */
+.callout-telemetry { top: 80px; left: var(--gutter); width: 330px; }
+.callout-schematic { top: 80px; right: var(--gutter); width: 250px; }
+.callout-readout { top: 50%; right: var(--gutter); transform: translateY(-50%); width: 150px; padding: 0; text-align: right; }
+.callout-p101 { bottom: 26px; right: var(--gutter); width: 330px; }
 
 .tele { width: 100%; border-collapse: collapse; font: 400 11.5px/1 var(--font-mono); font-variant-numeric: tabular-nums; }
 .tele th, .tele td { padding: 4px 4px; text-align: right; }
@@ -105,7 +106,7 @@
 .hud-power { font-family: var(--font-mono); font-size: 11px; }
 
 /* Thẻ chương trong phòng P101 dùng cùng khung kính HUD với bảng quanh tòa nhà */
-.card.holo-panel { border-radius: 10px; padding: 24px 26px 20px; }
+.card.holo-panel { position: fixed; border-radius: 10px; padding: 24px 26px 20px; }
 .card.holo-panel h2 { text-shadow: 0 0 24px rgba(95, 230, 226, 0.12); }
 .step-no { -webkit-text-stroke: 1px rgba(95, 230, 226, 0.55); text-shadow: 0 0 18px rgba(95, 230, 226, 0.25); }
 .formula {
@@ -158,8 +159,8 @@ body[data-chapter="hero"] .rail,
 body[data-chapter="scale"] .rail { opacity: 0; pointer-events: none; }
 .rail { transition: opacity var(--dur) var(--ease-out); }
 
-@media (max-width: 1180px) {
-  .callout-energy, .callout-occupancy { display: none; }
+@media (max-width: 1180px), (max-height: 760px) {
+  .callout-telemetry, .callout-readout { display: none; }
 }
 @media (max-width: 899px) {
   .callouts { display: none; }
@@ -191,3 +192,53 @@ body[data-chapter="scale"] .rail { opacity: 0; pointer-events: none; }
   .orbit-toggle { font-size: 0; gap: 0; padding: 0 14px; }
   .orbit-toggle .orbit-icon { width: 16px; height: 16px; }
 }
+
+/* Đầu bảng kiểu cửa sổ HUD: ký hiệu thu nhỏ / phóng to / đóng chỉ để trang trí */
+.holo-head { align-items: center; }
+.holo-head::after {
+  content: "— ▢ ✕"; font: 400 8.5px/1 var(--font-mono); letter-spacing: 0.35em; color: var(--text-3);
+  margin-left: 10px; opacity: 0.8;
+}
+.tele-wrap { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+.tele-gauge .gauge { width: 86px; height: 86px; }
+.tele-gauge .gauge-value b { font-size: 15px; }
+
+.schematic { width: 100%; height: 150px; display: block; overflow: visible; }
+.sc-plate { fill: rgba(95, 230, 226, 0.06); stroke: var(--holo-dim); stroke-width: 0.8; }
+.sc-cell { fill: rgba(18, 81, 92, 0.55); stroke: rgba(95, 230, 226, 0.75); stroke-width: 0.6; transition: fill 0.4s var(--ease-out); }
+.sc-cell.is-lit { fill: rgba(242, 169, 59, 0.75); }
+.sc-side { fill: rgba(10, 40, 52, 0.75); stroke: rgba(95, 230, 226, 0.45); stroke-width: 0.6; }
+.sc-top { fill: rgba(95, 230, 226, 0.16); stroke: var(--holo); stroke-width: 0.8; }
+.sc-floor.is-hover .sc-cell, .sc-floor.is-hover .sc-side { stroke: var(--lamp); stroke-width: 1.2; }
+.schematic { filter: drop-shadow(0 0 6px rgba(95, 230, 226, 0.35)); }
+.schematic-foot {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 8px 0 0; padding-top: 8px;
+  border-top: 1px solid var(--holo-faint); font-family: var(--font-mono);
+}
+.schematic-foot span { font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+.schematic-foot b { grid-row: span 2; align-self: center; font-size: 20px; font-weight: 500; color: var(--lamp); }
+.schematic-foot i { font-style: normal; font-size: 10px; color: var(--text-3); }
+
+.callout-readout .ro-label { font: 400 9.5px/1.2 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--holo); margin: 0 0 6px; }
+.callout-readout .occ-bars { height: 36px; margin-bottom: 4px; }
+.callout-readout .ro-sub { font: 400 10px var(--font-mono); color: var(--text-3); margin: 0 0 18px; }
+.callout-readout .ro-big {
+  font: 400 34px/1 var(--font-mono); color: var(--bone); margin: 0; letter-spacing: -0.02em;
+  text-shadow: 0 0 18px rgba(95, 230, 226, 0.35);
+}
+
+.dual-dials { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; }
+.dual-dials .gauge-sm { width: 54px; height: 54px; }
+.dual-dials .spec dd.is-big { font-size: 22px; color: var(--bone); }
+
+/* Chương cuối có thẻ gói giá ở bên trái: nhường chỗ, chỉ giữ các bảng bên phải. */
+body[data-chapter="scale"] .callout-telemetry { display: none; }
+
+/* Vi phạm: khung và nhãn đỏ, nhấp nháy nhẹ (nhịp nằm ở màu khung trong detect.js) */
+.scene-label.det.is-alert {
+  color: #ffd6da; border-color: rgba(255, 77, 94, 0.75); background: rgba(48, 8, 14, 0.85);
+  font-weight: 500; box-shadow: 0 0 12px -2px rgba(255, 77, 94, 0.6);
+}
+.scene-label.is-alert-zone { border-color: rgba(255, 194, 64, 0.6); }
+.scene-label.is-alert-zone b { color: #ffc240; }
+.calm dd.is-alert { color: #ff8a95; }

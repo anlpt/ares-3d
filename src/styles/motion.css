@@ -1,0 +1,139 @@
+/* Chuyển động kiểu HUD: màn khởi động vòng đo, dải quét chuyển cảnh, glitch tiêu đề, dữ liệu bùng nổ. */
+
+/* ---------- Màn khởi động ---------- */
+.boot {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+  background: radial-gradient(60% 50% at 50% 55%, #0b1f30 0%, var(--night) 70%);
+  color: var(--text);
+}
+.boot::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
+  background: repeating-linear-gradient(0deg, rgba(95, 230, 226, 0.05) 0 1px, transparent 1px 4px);
+}
+.boot-core { position: relative; display: flex; align-items: center; gap: clamp(24px, 5vw, 64px); padding: 24px; }
+.boot-dial { position: relative; width: clamp(170px, 26vw, 240px); aspect-ratio: 1; }
+.boot-rings { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 10px rgba(95, 230, 226, 0.35)); }
+.boot-rings circle, .boot-rings path { fill: none; transform-origin: 110px 110px; transform-box: view-box; }
+.br-ticks { stroke: var(--holo-dim); stroke-width: 6; stroke-dasharray: 1 5; }
+.br-track { stroke: rgba(95, 230, 226, 0.12); stroke-width: 3; }
+.br-fill { stroke: var(--holo); stroke-width: 3; stroke-linecap: round; transform: rotate(-90deg); }
+.br-dash { stroke: var(--holo); stroke-width: 1.5; stroke-dasharray: 46 20; opacity: 0.7; }
+.br-inner { stroke: var(--holo-dim); stroke-width: 1; stroke-dasharray: 2 6; }
+.br-arc { stroke: var(--lamp); stroke-width: 2; stroke-linecap: round; opacity: 0.9; }
+.boot-pct {
+  position: absolute; inset: 0; margin: 0; display: grid; place-content: center; text-align: center;
+  font-family: var(--font-mono); line-height: 1;
+}
+.boot-pct b { font-size: clamp(28px, 4vw, 40px); font-weight: 500; color: var(--bone); font-variant-numeric: tabular-nums; }
+.boot-pct span { font-size: 11px; color: var(--text-3); letter-spacing: 0.12em; margin-top: 4px; }
+.boot-side { width: min(320px, 70vw); }
+.boot-mark { font: 800 clamp(2rem, 4vw, 2.8rem)/1 var(--font-display); color: var(--bone); margin: 0 0 6px; letter-spacing: 0.02em; }
+.boot-sub { font: 500 10.5px/1.4 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--holo); margin: 0 0 14px; }
+.boot-log {
+  list-style: none; margin: 0 0 16px; padding: 0; min-height: 7.5em; display: grid; align-content: start; gap: 4px;
+  font: 400 11.5px/1.4 var(--font-mono); color: var(--text-2);
+}
+.boot-log li::before { content: "› "; color: var(--holo); }
+.boot-log li:last-child { color: var(--bone); }
+.boot-burst {
+  height: 6px; border-radius: 2px; overflow: hidden;
+  background: repeating-linear-gradient(90deg, rgba(95, 230, 226, 0.12) 0 8px, transparent 8px 10px);
+}
+.boot-burst i {
+  display: block; height: 100%; transform-origin: left; transform: scaleX(var(--p, 0));
+  background: repeating-linear-gradient(90deg, var(--holo) 0 8px, transparent 8px 10px);
+  filter: drop-shadow(0 0 6px var(--holo));
+}
+.boot-scan {
+  position: absolute; left: 0; right: 0; top: 0; height: 2px; opacity: 0;
+  background: linear-gradient(90deg, transparent, #c8fffc 20%, var(--holo) 50%, #c8fffc 80%, transparent);
+  box-shadow: 0 0 18px 4px rgba(95, 230, 226, 0.7);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .br-ticks { animation: spin 18s linear infinite; }
+  .br-dash { animation: spin 7s linear infinite reverse; }
+  .br-inner { animation: spin 11s linear infinite; }
+  .br-arc { animation: spin 2.2s cubic-bezier(.6, .1, .4, .9) infinite; }
+  .br-fill { transition: stroke-dashoffset 0.12s linear; }
+  .boot-log li { animation: log-in 0.35s var(--ease-out) both; }
+  .boot.is-leaving { animation: boot-out 0.9s cubic-bezier(.7, 0, .3, 1) forwards; }
+  .boot.is-leaving .boot-scan { animation: boot-scan 0.9s cubic-bezier(.7, 0, .3, 1) forwards; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes log-in { from { opacity: 0; transform: translateX(-8px); clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes boot-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
+@keyframes boot-scan { from { opacity: 1; transform: translateY(100vh); } 90% { opacity: 1; } to { opacity: 0; transform: translateY(0); } }
+
+/* ---------- Dải quét chuyển cảnh ---------- */
+.wipe { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; opacity: 0; }
+.wipe.is-on { opacity: 1; }
+.wipe-band {
+  position: absolute; top: -10%; bottom: -10%; left: 0; width: 40vw; transform: translateX(-45vw);
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(95, 230, 226, 0.05) 35%, rgba(95, 230, 226, 0.2) 82%, rgba(210, 255, 252, 0.75) 97%, transparent 100%),
+    repeating-linear-gradient(0deg, rgba(95, 230, 226, 0.14) 0 1px, transparent 1px 4px);
+  mix-blend-mode: screen;
+}
+.wipe-band::after {
+  content: ""; position: absolute; top: 0; bottom: 0; right: 2%; width: 2px;
+  background: #d9fffd; box-shadow: 0 0 22px 6px rgba(95, 230, 226, 0.65);
+}
+.wipe-slice {
+  position: absolute; left: 0; opacity: 0; mix-blend-mode: screen;
+  background: linear-gradient(90deg, transparent, rgba(95, 230, 226, 0.55) 40%, rgba(226, 109, 156, 0.4) 70%, transparent);
+}
+
+/* ---------- Thẻ chương: vẽ khung, nội dung bung lần lượt ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .card.is-entering { animation: card-draw 0.7s cubic-bezier(.65, 0, .35, 1) both; }
+  .card.is-entering > * { animation: card-item 0.55s var(--ease-out) both; }
+  .card.is-entering > :nth-child(1) { animation-delay: 0.18s; }
+  .card.is-entering > :nth-child(2) { animation-delay: 0.24s; }
+  .card.is-entering > :nth-child(3) { animation-delay: 0.3s; }
+  .card.is-entering > :nth-child(4) { animation-delay: 0.36s; }
+  .card.is-entering > :nth-child(5) { animation-delay: 0.42s; }
+  .card.is-entering > :nth-child(6) { animation-delay: 0.48s; }
+  .card.is-entering > :nth-child(n+7) { animation-delay: 0.54s; }
+  .card.is-entering .facts li, .card.is-entering .learn-steps li, .card.is-entering .topics tr,
+  .card.is-entering .calm > div, .card.is-entering .controls > label {
+    animation: data-in 0.45s var(--ease-out) both;
+  }
+  .card.is-entering :is(.facts li, .learn-steps li, .topics tr, .calm > div, .controls > label):nth-child(2) { animation-delay: 0.5s; }
+  .card.is-entering :is(.facts li, .learn-steps li, .topics tr, .calm > div, .controls > label):nth-child(3) { animation-delay: 0.56s; }
+  .card.is-entering :is(.facts li, .learn-steps li, .topics tr, .calm > div, .controls > label):nth-child(4) { animation-delay: 0.62s; }
+  .card.is-entering :is(.facts li, .learn-steps li, .topics tr, .calm > div, .controls > label):nth-child(n+5) { animation-delay: 0.68s; }
+  .card.is-entering :is(.facts li, .learn-steps li, .topics tr, .calm > div, .controls > label):first-child { animation-delay: 0.44s; }
+
+  .card h2.is-glitch { animation: glitch 0.5s steps(1, end) both; }
+
+  .callouts.is-on .tele tbody tr { animation: data-in 0.4s var(--ease-out) both; animation-delay: calc(0.45s + var(--i, 0) * 45ms); }
+  .callouts.is-on .occ-bars i { animation: bar-rise 0.6s var(--ease-out) both; }
+  .callouts.is-on .occ-bars i:nth-child(odd) { animation-delay: 0.55s; }
+  .callouts.is-on .occ-bars i:nth-child(even) { animation-delay: 0.7s; }
+  .gauge-spin { animation: spin 9s linear infinite; }
+}
+.gauge-spin { fill: none; stroke: rgba(95, 230, 226, 0.45); stroke-width: 1; stroke-dasharray: 14 8 2 8; transform-origin: 50px 50px; transform-box: view-box; }
+
+@keyframes card-draw {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes card-item { from { opacity: 0; transform: translateY(8px); } }
+@keyframes data-in { from { opacity: 0; transform: translateX(-10px); filter: brightness(2.2); } }
+@keyframes bar-rise { from { transform: scaleY(0); } }
+@keyframes glitch {
+  0% { text-shadow: 3px 0 var(--holo), -3px 0 var(--doubt); transform: translateX(-3px) skewX(-8deg); }
+  15% { text-shadow: -4px 0 var(--holo), 4px 0 var(--doubt); transform: translateX(3px); clip-path: inset(0 0 55% 0); }
+  30% { text-shadow: 2px 0 var(--holo), -2px 0 var(--doubt); transform: translateX(-2px); clip-path: inset(40% 0 0 0); }
+  45% { text-shadow: -1px 0 var(--holo), 1px 0 var(--doubt); transform: none; clip-path: inset(0); }
+  70% { text-shadow: 1px 0 var(--holo), -1px 0 var(--doubt); }
+  100% { text-shadow: none; transform: none; clip-path: none; }
+}
+.occ-bars i { transform-origin: bottom; }
+
+@media (max-width: 640px) {
+  .boot-core { flex-direction: column; text-align: center; gap: 20px; }
+  .boot-side { width: min(320px, 86vw); }
+  .boot-log { text-align: left; min-height: 9em; }
+  .wipe-band { width: 70vw; }
+}

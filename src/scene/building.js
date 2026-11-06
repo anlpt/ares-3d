@@ -5,6 +5,8 @@ import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { PALETTE, ROOM } from './palette.js';
 import { createLayer, makeLabelEl, damp } from './layer.js';
 import { createCity } from './city.js';
+import { createScan } from './scan.js';
+import { buildInteriorLights, buildStairs, buildEnvelope, buildPlaza } from './buildingDetail.js';
 
 const COLS = [-1, 0, 1];
 export const FLOOR_COUNT = 9;
@@ -69,9 +71,7 @@ function buildGlass(layer) {
   const slabs = new THREE.InstancedMesh(new THREE.BoxGeometry(WIDTH, 0.1, ROOM.d), slabMat, FLOOR_COUNT + 1);
   for (let f = 0; f <= FLOOR_COUNT; f += 1) slabs.setMatrixAt(f, m.makeTranslation(0, floorY(f), 0));
 
-  const interiorMat = layer.fade(new THREE.MeshBasicMaterial({ color: '#ffffff', depthWrite: false }), 0.95);
-  const interior = new THREE.InstancedMesh(new THREE.PlaneGeometry(ROOM.w - 0.4, CELL_H - 0.5), interiorMat, OTHER_CELLS.length);
-  OTHER_CELLS.forEach(({ c, f }, i) => interior.setMatrixAt(i, m.makeTranslation(c * ROOM.w, floorY(f) + CELL_H / 2, BACK + 0.15)));
+  const interior = buildInteriorLights(layer, OTHER_CELLS, floorY, CELL_H);
 
   const rand = seededRandom(31);
   const deskMat = layer.fade(new THREE.MeshBasicMaterial({ color: '#06121a' }), 1);
@@ -84,7 +84,7 @@ function buildGlass(layer) {
       desks.setMatrixAt(i * per + k, m.makeTranslation(x, floorY(f) + 0.45, z));
     }
   });
-  layer.group.add(slabs, interior, desks, glass);
+  layer.group.add(slabs, desks, glass);
   return { interior };
 }
 
@@ -117,12 +117,26 @@ function buildHoverVolumes(layer) {
   });
 }
 
+/**
+ * Mọi vật liệu trong lớp đều "transparent" (để mờ/hiện), nên three.js xếp thứ tự vẽ theo khoảng cách.
+ * Kính và đường viền cộng sáng không ghi chiều sâu, nên một khối nhà phía sau vẽ sau sẽ đè lên tòa nhà.
+ * Vẽ mọi vật đặc (khối nhà, mặt đất, cây, bàn ghế, sàn) trước, lớp phát sáng sau.
+ */
+function orderSolidsFirst(group) {
+  group.traverse((o) => {
+    if (!o.material || o.isSprite) return;
+    const additive = o.material.blending === THREE.AdditiveBlending;
+    // eslint-disable-next-line no-param-reassign -- renderOrder là thuộc tính hiển thị của three.js
+    o.renderOrder = additive ? 1 : -1;
+  });
+}
+
 /** Điểm neo cho các bảng HUD (toạ độ thế giới). */
 export const ANCHORS = Object.freeze({
-  telemetry: new THREE.Vector3(ROOM.w, floorY(8) + CELL_H / 2, FRONT),
-  occupancy: new THREE.Vector3(ROOM.w, floorY(3) + CELL_H / 2, FRONT),
+  telemetry: new THREE.Vector3(-ROOM.w * 1.5, floorY(7) + CELL_H / 2, FRONT),
+  schematic: new THREE.Vector3(ROOM.w, floorY(FLOOR_COUNT), FRONT),
+  readout: new THREE.Vector3(ROOM.w * 1.5, floorY(4) + CELL_H / 2, FRONT),
   p101: new THREE.Vector3(0, CELL_H / 2, FRONT),
-  energy: new THREE.Vector3(0, floorY(6) + CELL_H / 2, FRONT),
 });
 
 /** @param {THREE.Scene} scene */
@@ -133,15 +147,26 @@ export function createBuilding(scene) {
   const floorLabels = buildRuler(layer);
   const hover = buildHoverVolumes(layer);
   createCity(layer, BASE_Y);
+  const height = FLOOR_COUNT * CELL_H;
+  buildStairs(layer, FLOOR_COUNT, floorY, CELL_H, WIDTH / 2 - 4.2);
+  buildEnvelope(layer, { width: WIDTH, baseY: BASE_Y, height, floorCount: FLOOR_COUNT, floorY });
+  buildPlaza(layer, { baseY: BASE_Y, width: WIDTH });
+  const scan = createScan(layer, {
+    axis: 'y', from: BASE_Y - 0.2, to: floorY(FLOOR_COUNT) + 1.5,
+    size: [WIDTH + 4, ROOM.d + 4], center: [0, 0, 0],
+  });
+  orderSolidsFirst(layer.group);
   scene.add(layer.group);
 
   const rand = seededRandom(7);
   const lit = OTHER_CELLS.map(() => rand() < 0.45);
   const level = lit.map((on) => (on ? 1 : 0));
-  const warm = PALETTE.lamp.clone().multiplyScalar(0.85);
-  const cold = new THREE.Color('#0b2b36');
+  // Phòng có người: ánh đèn ấm; phòng trống: chỉ còn ánh xanh ngọc mờ của hệ thống.
+  const warm = PALETTE.lamp.clone().multiplyScalar(0.82);
+  const cold = new THREE.Color('#12515c');
   const color = new THREE.Color();
-  OTHER_CELLS.forEach((_, i) => interior.setColorAt(i, color.copy(cold).lerp(warm, level[i])));
+  OTHER_CELLS.forEach((_, i) => interior.setCell(i, color.copy(cold).lerp(warm, level[i])));
+  interior.commit();
   let timer = 0;
   let hoverFloor = -1;
   let roomOccupied = true;
@@ -159,9 +184,9 @@ export function createBuilding(scene) {
       }
       OTHER_CELLS.forEach((_, i) => {
         level[i] += ((lit[i] ? 1 : 0) - level[i]) * Math.min(1, dt * 2.5);
-        interior.setColorAt(i, color.copy(cold).lerp(warm, level[i]));
+        interior.setCell(i, color.copy(cold).lerp(warm, level[i]));
       });
-      interior.instanceColor.needsUpdate = true;
+      interior.commit();
       hover.forEach((h, f) => {
         h.level = damp(h.level, f === hoverFloor ? 1 : 0, 8, dt);
         h.mat.opacity = h.level * 0.09 * layer.mix;
@@ -175,6 +200,13 @@ export function createBuilding(scene) {
         return { floor: f, lit: own + (f === 0 && roomOccupied ? 1 : 0), total: COLS.length };
       });
     },
+    /** Trạng thái từng phòng cho sơ đồ thu nhỏ (cột 0..2 từ trái sang). */
+    cellStates() {
+      return [
+        ...OTHER_CELLS.map((cell, i) => ({ c: cell.c + 1, f: cell.f, lit: lit[i] })),
+        { c: 1, f: 0, lit: roomOccupied },
+      ];
+    },
     /** @param {THREE.Raycaster} ray @returns {{floor:number, isP101:boolean}|null} */
     pick(ray) {
       if (!layer.group.visible || layer.mix < 0.5) return null;
@@ -186,5 +218,9 @@ export function createBuilding(scene) {
     setHoverFloor(f) {
       hoverFloor = f;
     },
+    /** Tòa nhà tự dựng từ mặt đất lên theo một mặt quét hologram. */
+    materialize: (duration = 2.6) => scan.play(duration),
+    hideForBoot: () => scan.hide(),
+    reveal: () => scan.reveal(),
   };
 }

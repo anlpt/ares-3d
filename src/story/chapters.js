@@ -5,7 +5,8 @@ const EVEN = [1, 1, 1, 1];
 export const CHAPTERS = Object.freeze([
   {
     id: 'hero', label: 'Tòa nhà',
-    pose: { pos: [52, 26, 96], target: [-13, 15, 0] },
+    pose: { pos: [40, 24, 92], target: [-3, 15.5, 0] },
+    view: -0.1,
     layers: { building: 1, room: 1, people: 1 },
     sim: { minute: 17 * 60 + 5, sky: 0.05, tOut: 31, people: 16, weights: EVEN },
     hud: false,
@@ -71,12 +72,34 @@ export const CHAPTERS = Object.freeze([
     interactive: true,
   },
   {
+    id: 'lab', label: 'Phòng lab',
+    pose: { pos: [-4.5, 9.5, 13.5], target: [-14, 0.8, 0.3] },
+    layers: { lab: 1 },
+    sim: { minute: 10 * 60, sky: 0.6, tOut: 33, people: 12, weights: EVEN },
+    hud: false,
+  },
+  {
+    id: 'office', label: 'Văn phòng',
+    pose: { pos: [23.5, 9.5, 13.5], target: [14, 0.8, 0.3] },
+    layers: { office: 1 },
+    sim: { minute: 10 * 60, sky: 0.6, tOut: 33, people: 12, weights: EVEN },
+    hud: false,
+  },
+  {
+    id: 'street', label: 'Ngoài đường',
+    pose: { pos: [14, 17, 94], target: [0, 0, 64] },
+    layers: { street: 1, building: 0.85 },
+    sim: { minute: 19 * 60 + 30, sky: 0, tOut: 30, people: 0, weights: EVEN },
+    hud: false,
+  },
+  {
     id: 'scale', label: 'Tòa nhà',
-    pose: { pos: [-58, 30, 92], target: [-14, 15, 0] },
+    pose: { pos: [-46, 28, 90], target: [-6, 15.5, 0] },
+    view: 0,
     layers: { building: 1, room: 1, people: 1 },
     sim: { minute: 17 * 60 + 5, sky: 0.05, tOut: 31, people: 16, weights: EVEN },
     hud: false,
   },
 ]);
 
-export const LAYER_NAMES = Object.freeze(['building', 'room', 'people', 'vision', 'zones', 'buffers', 'hvac', 'learning', 'network', 'sun']);
+export const LAYER_NAMES = Object.freeze(['building', 'room', 'people', 'vision', 'zones', 'buffers', 'hvac', 'learning', 'network', 'sun', 'lab', 'office', 'street']);

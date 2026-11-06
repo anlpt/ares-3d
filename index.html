@@ -11,13 +11,36 @@
 </head>
 <body data-chapter="hero">
   <a class="skip" href="#main">Bỏ qua phần mở đầu</a>
+  <div id="boot" class="boot" role="status" aria-label="Đang tải mô phỏng ARES">
+    <div class="boot-core">
+      <div class="boot-dial">
+        <svg class="boot-rings" viewBox="0 0 220 220" aria-hidden="true">
+          <circle cx="110" cy="110" r="104" class="br-ticks" />
+          <circle cx="110" cy="110" r="92" class="br-track" />
+          <circle cx="110" cy="110" r="92" class="br-fill" data-boot-ring />
+          <circle cx="110" cy="110" r="78" class="br-dash" />
+          <circle cx="110" cy="110" r="64" class="br-inner" />
+          <path class="br-arc" d="M110 32 A78 78 0 0 1 188 110" />
+        </svg>
+        <p class="boot-pct"><b data-boot-pct>0</b><span>%</span></p>
+      </div>
+      <div class="boot-side">
+        <p class="boot-mark">ARES</p>
+        <p class="boot-sub">Đang khởi tạo mô phỏng phòng P101</p>
+        <ol class="boot-log" data-boot-log></ol>
+        <div class="boot-burst" aria-hidden="true"><i></i></div>
+      </div>
+    </div>
+    <i class="boot-scan" aria-hidden="true"></i>
+  </div>
+  <div id="wipe" class="wipe" aria-hidden="true"><div class="wipe-band"></div></div>
   <canvas id="scene" aria-hidden="true"></canvas>
   <div id="labels" aria-hidden="true"></div>
 
   <header class="topbar">
     <span class="wordmark" aria-label="ARES">ARES</span>
     <span class="topbar-room">Phòng P101</span>
-    <button class="btn btn-ghost orbit-toggle" type="button" data-orbit aria-pressed="true" title="Kéo chuột trên cảnh để xoay sang góc khác">
+    <button class="btn btn-ghost orbit-toggle" type="button" data-orbit aria-pressed="false" title="Kéo chuột trên cảnh để xoay sang góc khác">
       <span class="orbit-icon" aria-hidden="true"></span>Tự xoay 360°
     </button>
     <button class="btn btn-ghost" type="button" data-goto="sandbox">Mở mô phỏng</button>
@@ -35,6 +58,9 @@
       <li><button type="button" data-goto="link">MQTT</button></li>
       <li><button type="button" data-goto="result">Kết quả</button></li>
       <li><button type="button" data-goto="sandbox">Tự thử</button></li>
+      <li><button type="button" data-goto="lab">Phòng lab</button></li>
+      <li><button type="button" data-goto="office">Văn phòng</button></li>
+      <li><button type="button" data-goto="street">Ngoài đường</button></li>
     </ol>
   </nav>
 
@@ -59,50 +85,62 @@
 
     <section class="holo-panel callout-telemetry" data-callout="telemetry" aria-label="Điện theo tầng">
       <header class="holo-head"><span>Đo theo tầng</span><span>kW</span></header>
-      <table class="tele">
-        <thead><tr><th scope="col">Tầng</th><th scope="col">kW</th><th scope="col">Phòng</th><th scope="col"><span class="sr-only">Mức</span></th></tr></thead>
-        <tbody data-tele-rows></tbody>
-      </table>
+      <div class="tele-wrap">
+        <table class="tele">
+          <thead><tr><th scope="col">Tầng</th><th scope="col">kW</th><th scope="col">Phòng</th><th scope="col"><span class="sr-only">Mức</span></th></tr></thead>
+          <tbody data-tele-rows></tbody>
+        </table>
+        <div class="gauge-wrap tele-gauge">
+          <svg class="gauge" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" class="gauge-track" />
+            <circle cx="50" cy="50" r="42" class="gauge-fill" data-total-ring />
+            <circle cx="50" cy="50" r="34" class="gauge-inner" />
+            <circle cx="50" cy="50" r="48" class="gauge-spin" />
+          </svg>
+          <p class="gauge-value"><b data-total-kw>–</b><span>kW tổng</span></p>
+        </div>
+      </div>
     </section>
 
-    <section class="holo-panel callout-occupancy" data-callout="occupancy" aria-label="Hiện diện theo tầng">
-      <header class="holo-head"><span>Hiện diện AI</span><span data-occ-total>–</span></header>
-      <div class="occ-bars" data-occ-bars>
-      </div>
-      <div class="occ-axis"><span>L01</span><span data-occ-top>L09</span></div>
+    <section class="holo-panel callout-schematic" data-callout="schematic" aria-label="Sơ đồ tòa nhà">
+      <header class="holo-head"><span>Sơ đồ</span><span>9 tầng</span></header>
+      <svg class="schematic" data-schematic role="img" aria-label="Sơ đồ tòa nhà, phòng có người tô màu hổ phách"></svg>
+      <p class="schematic-foot"><span>Tiêu thụ năng lượng</span><b>−12,1 %</b><i>mô phỏng 4 ngày</i></p>
+    </section>
+
+    <section class="callout-readout" data-callout="readout" aria-label="Hiện diện và nhiệt độ">
+      <p class="ro-label">Hiện diện</p>
+      <div class="occ-bars" data-occ-bars></div>
+      <p class="ro-sub"><span data-occ-total>–</span> phòng có người</p>
+      <p class="ro-label">Nhiệt độ P101</p>
+      <p class="ro-big" data-p101-temp-big>–</p>
     </section>
 
     <section class="holo-panel callout-p101" data-callout="p101" aria-label="Phòng P101">
-      <header class="holo-head"><span>Phòng P101</span><span>trực tiếp</span></header>
-      <div class="gauge-row">
+      <header class="holo-head"><span>P101</span><span>trực tiếp</span></header>
+      <div class="dual-dials">
+        <dl class="spec">
+          <div><dt>Năng lượng</dt><dd class="is-big" data-p101-kw-big>–</dd></div>
+          <div><dt>Nhiệt độ</dt><dd data-p101-temp>–</dd></div>
+        </dl>
+        <div class="gauge-wrap">
+          <svg class="gauge gauge-sm" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" class="gauge-track" />
+            <circle cx="50" cy="50" r="42" class="gauge-fill is-lamp" data-people-ring />
+          </svg>
+          <p class="gauge-value"><b data-p101-people>–</b><span>người</span></p>
+        </div>
         <div class="gauge-wrap">
           <svg class="gauge" viewBox="0 0 100 100" aria-hidden="true">
             <circle cx="50" cy="50" r="42" class="gauge-track" />
             <circle cx="50" cy="50" r="42" class="gauge-fill" data-p101-ring />
             <circle cx="50" cy="50" r="34" class="gauge-inner" />
+            <circle cx="50" cy="50" r="48" class="gauge-spin" />
           </svg>
           <p class="gauge-value"><b data-p101-kw>–</b><span>kW</span></p>
         </div>
-        <dl class="spec">
-          <div><dt>Nhiệt độ</dt><dd data-p101-temp>–</dd></div>
-          <div><dt>Người</dt><dd data-p101-people>–</dd></div>
-        </dl>
       </div>
       <p class="holo-hint">Bấm vào P101 trên tòa nhà để đi vào phòng</p>
-    </section>
-
-    <section class="holo-panel callout-energy" data-callout="energy" aria-label="Tiết kiệm điện mô phỏng">
-      <header class="holo-head"><span>Năng lượng</span><span>4 ngày</span></header>
-      <div class="gauge-row">
-        <svg class="gauge gauge-sm" viewBox="0 0 100 100" aria-hidden="true">
-          <circle cx="50" cy="50" r="42" class="gauge-track" />
-          <circle cx="50" cy="50" r="42" class="gauge-fill is-lamp" data-energy-ring />
-        </svg>
-        <dl class="spec">
-          <div><dt>So với bật hết</dt><dd class="is-big">−12,1 %</dd></div>
-          <div><dt>Nguồn</dt><dd>mô phỏng</dd></div>
-        </dl>
-      </div>
     </section>
   </div>
 
@@ -289,6 +327,46 @@
         </div>
         <p class="decision" data-sb="note" aria-live="polite"></p>
         <pre class="light-notes" data-sb="light-notes"></pre>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="lab" aria-labelledby="h-lab">
+      <div class="card holo-panel">
+        <p class="step-no">9</p>
+        <h2 id="h-lab">Phòng thí nghiệm: an toàn trước, tiết kiệm sau</h2>
+        <p>Tủ hút khí độc chạy 24/7 nên ARES luôn giữ thông gió, chỉ điều chỉnh đèn và điều hòa theo người. Camera đồng thời gắn cờ đỏ cho các hành vi mất an toàn: thiếu áo hoặc kính bảo hộ, ăn uống trong lab, đi vào khu hạn chế quanh tủ hút.</p>
+        <dl class="calm">
+          <div><dt>Người trong lab</dt><dd data-stat="lab-people">–</dd></div>
+          <div><dt>Vi phạm đang thấy</dt><dd class="is-alert" data-stat="lab-violations">–</dd></div>
+        </dl>
+        <p class="honest">Gói mở rộng đề xuất: model trong repo ARES hiện chỉ nhận diện người. Nhận diện áo, kính bảo hộ và đồ ăn cần huấn luyện thêm lớp mới. Cảnh này là minh họa.</p>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="office" aria-labelledby="h-office">
+      <div class="card holo-panel">
+        <p class="step-no">10</p>
+        <h2 id="h-office">Văn phòng: tắt đúng chỗ đang lãng phí</h2>
+        <p>Cụm bàn không còn ai mà đèn và màn hình vẫn sáng, phòng họp trống mà điều hòa vẫn chạy, cửa sổ mở trong khi điều hòa đang làm mát: ARES gắn cờ, đếm ngược rồi tự tắt. Khi có người quay lại, đèn bật lại ngay.</p>
+        <dl class="calm">
+          <div><dt>Cảnh báo lãng phí</dt><dd class="is-alert" data-stat="office-flags">–</dd></div>
+          <div><dt>Công suất đang lãng phí</dt><dd data-stat="office-kw">–</dd></div>
+        </dl>
+        <p class="honest">Kịch bản lặp lại mỗi 40 giây để minh họa. Số công suất là giả định.</p>
+      </div>
+    </section>
+
+    <section class="chapter" data-chapter="street" aria-labelledby="h-street">
+      <div class="card holo-panel">
+        <p class="step-no">11</p>
+        <h2 id="h-street">Ngoài đường: đèn sáng theo người, camera bắt vi phạm</h2>
+        <p>Đèn đường giữ 20 % khi vắng và sáng đủ khi có người hoặc xe trong bán kính 8 m. Cùng camera đó gắn cờ vượt đèn đỏ, đi ngược chiều, đỗ xe sai chỗ, chạy xe trên vỉa hè và không đội mũ bảo hiểm.</p>
+        <dl class="calm">
+          <div><dt>Đèn đang sáng đủ</dt><dd data-stat="street-lit">–</dd></div>
+          <div><dt>Điện đèn tiết kiệm</dt><dd data-stat="street-saving">–</dd></div>
+          <div><dt>Vi phạm đang thấy</dt><dd class="is-alert" data-stat="street-violations">–</dd></div>
+        </dl>
+        <p class="honest">Gói mở rộng đề xuất: nhận diện xe, làn đường, đèn tín hiệu và mũ bảo hiểm cần model riêng ngoài phần nhận diện người của ARES. Cảnh và số liệu là minh họa.</p>
       </div>
     </section>
 

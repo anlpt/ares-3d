@@ -1,6 +1,8 @@
 // Bảng HUD kính nối vào tòa nhà bằng đường dẫn: chiếu điểm neo 3D ra màn hình mỗi khung hình.
 import * as THREE from 'three';
-import { ANCHORS, FLOOR_COUNT } from '../scene/building.js';
+import { ANCHORS, FLOOR_COUNT, CELL_H } from '../scene/building.js';
+import { ROOM } from '../scene/palette.js';
+import { createSchematic } from './schematic.js';
 import { num, setText } from './format.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -9,7 +11,7 @@ const REFRESH_S = 0.25;
 const FLOOR_BASE_KW = 0.3;
 const ROOM_KW = 1.15;
 const P101_GAUGE_MAX_KW = 4.5;
-const ENERGY_RATIO = 32.64 / 37.12; // ARES / bật hết, 4 ngày mô phỏng (ARES_UPGRADE.md mục 9)
+const TOTAL_GAUGE_MAX_KW = 32;
 
 const floorCode = (f) => `L${String(f + 1).padStart(2, '0')}`;
 
@@ -35,8 +37,9 @@ function attachPoint(rect, p) {
 }
 
 function buildTelemetryRows(tbody, onHover) {
-  return Array.from({ length: FLOOR_COUNT }, (_, i) => FLOOR_COUNT - 1 - i).map((f) => {
+  return Array.from({ length: FLOOR_COUNT }, (_, i) => FLOOR_COUNT - 1 - i).map((f, i) => {
     const tr = document.createElement('tr');
+    tr.style.setProperty('--i', String(i));
     tr.dataset.floor = String(f);
     const cells = ['th', 'td', 'td', 'td'].map((tag) => tr.appendChild(document.createElement(tag)));
     cells[0].scope = 'row';
@@ -72,13 +75,16 @@ export function createCallouts(root, { camera, building }) {
   const occHost = root.querySelector('[data-occ-bars]');
   const occBars = Array.from({ length: FLOOR_COUNT }, () => occHost.appendChild(document.createElement('i')));
   occHost.style.setProperty('--n', String(FLOOR_COUNT));
-  setText(root.querySelector('[data-occ-top]'), floorCode(FLOOR_COUNT - 1));
-  const occTotal = root.querySelector('[data-occ-total]');
+  const q = (k) => root.querySelector(`[data-${k}]`);
+  const occTotal = q('occ-total');
+  const total = { ring: q('total-ring'), kw: q('total-kw') };
   const p101 = {
-    ring: root.querySelector('[data-p101-ring]'), kw: root.querySelector('[data-p101-kw]'),
-    temp: root.querySelector('[data-p101-temp]'), people: root.querySelector('[data-p101-people]'),
+    ring: q('p101-ring'), kw: q('p101-kw'), kwBig: q('p101-kw-big'), temp: q('p101-temp'),
+    tempBig: q('p101-temp-big'), people: q('p101-people'), peopleRing: q('people-ring'),
   };
-  setRing(root.querySelector('[data-energy-ring]'), ENERGY_RATIO);
+  const schematic = createSchematic(q('schematic'), {
+    cols: 3, floors: FLOOR_COUNT, cellH: CELL_H / ROOM.w, depth: ROOM.d / ROOM.w,
+  });
 
   const v = new THREE.Vector3();
   let acc = REFRESH_S;
@@ -87,9 +93,11 @@ export function createCallouts(root, { camera, building }) {
   function refreshData(state) {
     const stats = building.floorStats();
     const roomKw = state.power.light + state.power.ac;
+    let sumKw = 0;
     rows.forEach((r) => {
       const s = stats[r.f];
       const kw = FLOOR_BASE_KW + (s.lit - (r.f === 0 ? 1 : 0)) * ROOM_KW + (r.f === 0 ? roomKw : 0);
+      sumKw += Math.max(0, kw);
       setText(r.kw, num(Math.max(0, kw), 2));
       setText(r.rooms, `${s.lit}/${s.total}`);
       r.bar.style.setProperty('--v', String(s.lit / s.total));
@@ -101,10 +109,17 @@ export function createCallouts(root, { camera, building }) {
     });
     const lit = stats.reduce((a, s) => a + s.lit, 0);
     setText(occTotal, `${lit}/${stats.length * stats[0].total}`);
+    const people = state.inputs.zoneCounts.reduce((a, b) => a + b, 0);
+    setRing(total.ring, sumKw / TOTAL_GAUGE_MAX_KW);
+    setText(total.kw, num(sumKw, 1));
     setRing(p101.ring, roomKw / P101_GAUGE_MAX_KW);
+    setRing(p101.peopleRing, people / 40);
     setText(p101.kw, num(roomKw, 2));
+    setText(p101.kwBig, `${num(roomKw, 2)} kW`);
     setText(p101.temp, `${num(state.tIn, 1)} °C`);
-    setText(p101.people, `${state.inputs.zoneCounts.reduce((a, b) => a + b, 0)}`);
+    setText(p101.tempBig, `${num(state.tIn, 1)}°C`);
+    setText(p101.people, String(people));
+    schematic.update(building.cellStates(), hoverFloor);
   }
 
   function drawLines() {

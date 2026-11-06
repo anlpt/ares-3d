@@ -3,11 +3,11 @@ import * as THREE from 'three';
 import { ROOM } from './palette.js';
 import { SEATS, DOOR, AISLE_X, zoneOf } from './layout.js';
 import { createLayer } from './layer.js';
-import { fresnelMaterial } from './holo.js';
+import { buildPerson, posePerson, SEAT_DROP } from './person.js';
 
 const WALK_SPEED = 2.4;
 const SPAWN_GAP_S = 0.22;
-const SEATED_DROP = 0.42;
+const STRIDE_RATE = 9;
 const TURN_RATE = 9;
 const SIT_RATE = 6;
 
@@ -17,18 +17,8 @@ function dampAngle(from, to, rate, dt) {
   return from + diff * (1 - Math.exp(-rate * dt));
 }
 
-function makeMesh(layer, bodyMat) {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.19, 0.78, 4, 10), bodyMat);
-  body.position.y = 0.6;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), bodyMat);
-  head.position.y = 1.28;
-  body.castShadow = true;
-  head.castShadow = true;
-  g.add(body, head);
-  g.renderOrder = 2;
-  body.renderOrder = 2;
-  head.renderOrder = 2;
+function makeMesh(layer, seed) {
+  const g = buildPerson(seed, (m) => layer.fade(m, 1));
   layer.group.add(g);
   return g;
 }
@@ -56,8 +46,6 @@ const pathIn = (seat) => [
 /** @param {THREE.Scene} scene */
 export function createPeople(scene) {
   const layer = createLayer('people');
-  // Người dạng hologram: thân trong, viền sáng xanh ngọc — cùng ngôn ngữ với mô hình tòa nhà.
-  const bodyMat = fresnelMaterial();
   scene.add(layer.group);
 
   /** @type {Array<{id:number, mesh:THREE.Group, pos:THREE.Vector3, path:THREE.Vector3[], seat:object, mode:string, conf:number, wait:number}>} */
@@ -67,12 +55,12 @@ export function createPeople(scene) {
   const occupiedSeatIds = () => new Set(agents.filter((a) => a.mode !== 'leaving').map((a) => a.seat.id));
 
   function spawn(seat, { instant = false, wait = 0 } = {}) {
-    const mesh = makeMesh(layer, bodyMat);
+    const mesh = makeMesh(layer, nextId * 13 + seat.id);
     const pos = instant ? new THREE.Vector3(seat.x, 0, seat.z) : new THREE.Vector3(DOOR.x, 0, DOOR.z);
     mesh.position.copy(pos);
     mesh.visible = instant || wait <= 0;
     const agent = {
-      id: nextId, mesh, pos, seat, conf: 0.9, wait, heading: Math.PI, sit: instant ? 1 : 0,
+      id: nextId, mesh, pos, seat, conf: 0.9, wait, heading: Math.PI, sit: instant ? 1 : 0, phase: 0,
       path: instant ? [] : pathIn(seat), mode: instant ? 'seated' : 'walking',
     };
     nextId += 1;
@@ -91,7 +79,9 @@ export function createPeople(scene) {
       a.mesh.visible = a.wait <= 0;
       return;
     }
-    if (a.path.length > 0) {
+    const walking = a.path.length > 0;
+    if (walking) {
+      a.phase += STRIDE_RATE * dt;
       const target = a.path[0];
       const delta = target.clone().sub(a.pos);
       const dist = delta.length();
@@ -109,9 +99,10 @@ export function createPeople(scene) {
     const seated = a.mode === 'seated';
     a.sit += ((seated ? 1 : 0) - a.sit) * (1 - Math.exp(-SIT_RATE * dt));
     if (seated) a.heading = dampAngle(a.heading, Math.PI, TURN_RATE, dt);
-    const bob = (1 - a.sit) * Math.abs(Math.sin(performance.now() * 0.012 + a.id)) * 0.05;
-    a.mesh.position.set(a.pos.x, -SEATED_DROP * a.sit + bob, a.pos.z);
+    const bob = walking ? (1 - a.sit) * Math.abs(Math.sin(a.phase)) * 0.035 : 0;
+    a.mesh.position.set(a.pos.x, -SEAT_DROP * a.sit + bob, a.pos.z);
     a.mesh.rotation.y = a.heading;
+    posePerson(a.mesh, a.sit, a.phase, walking);
   }
 
   return {
@@ -140,12 +131,13 @@ export function createPeople(scene) {
       return true;
     },
     removeByMesh(object) {
-      const agent = agents.find((a) => a.mode !== 'leaving' && a.mesh.children.includes(object));
+      let root = object;
+      while (root && !agents.some((a) => a.mesh === root)) root = root.parent;
+      const agent = agents.find((a) => a.mode !== 'leaving' && a.mesh === root);
       if (agent) leave(agent);
       return Boolean(agent);
     },
     update(dt) {
-      bodyMat.uniforms.uMix.value = layer.mix;
       agents.forEach((a) => stepAgent(a, dt));
       const gone = agents.filter((a) => a.mode === 'leaving' && a.path.length === 0);
       if (gone.length > 0) {
@@ -163,7 +155,11 @@ export function createPeople(scene) {
       }, [0, 0, 0, 0]);
     },
     agents: () => agents,
-    meshes: () => agents.filter((a) => a.mode !== 'leaving').flatMap((a) => a.mesh.children),
+    meshes: () => agents.filter((a) => a.mode !== 'leaving').flatMap((a) => {
+      const list = [];
+      a.mesh.traverse((o) => { if (o.isMesh) list.push(o); });
+      return list;
+    }),
     count: () => agents.filter((a) => a.mode !== 'leaving').length,
   };
 }

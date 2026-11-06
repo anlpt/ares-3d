@@ -46,17 +46,24 @@ main { position: relative; z-index: 5; pointer-events: none; }
 .chapter-sandbox { min-height: 150vh; }
 
 .card {
-  position: sticky; top: 13vh;
+  /* Thẻ đứng yên một chỗ; cuộn chỉ đổi chương — thẻ cũ mờ đi, thẻ mới tự vẽ ra tại chỗ. */
+  position: fixed; top: 50%; left: var(--gutter); transform: translateY(-50%);
   width: var(--card-w);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.35s var(--ease-out), visibility 0s linear 0.35s;
   padding: 26px 28px 22px;
   background: var(--pane);
   border: 1px solid var(--pane-line);
   border-radius: var(--r-pane);
-  pointer-events: auto;
+  pointer-events: none;
   box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.8);
-  max-height: calc(100vh - 13vh - 16px);
+  max-height: calc(100vh - 150px);
   overflow-y: auto;
   scrollbar-width: thin;
+}
+.chapter.is-active .card {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  transition: opacity 0.35s var(--ease-out);
 }
 .card h2 { font-size: var(--text-h2); margin-bottom: 14px; }
 .card-wide { --card-w: min(560px, 44vw); }
@@ -70,13 +77,13 @@ main { position: relative; z-index: 5; pointer-events: none; }
 /* Mở đầu: chữ lớn đặt thẳng trên cảnh, không có khung. */
 .chapter-hero { min-height: 140vh; padding-top: 0; }
 .card-hero {
-  top: 0; min-height: 100vh; width: min(760px, 62vw);
-  display: flex; flex-direction: column; justify-content: center;
-  padding: 90px 0 48px; background: none; border: 0; box-shadow: none;
+  top: 0; bottom: 0; transform: none; max-height: none; overflow: visible; min-height: 100vh; width: min(540px, 38vw);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 90px 0 40px; background: none; border: 0; box-shadow: none;
 }
 .chapter-hero::before {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(10, 15, 22, 0.85) 0%, rgba(10, 15, 22, 0.35) 45%, transparent 70%);
+  background: radial-gradient(75% 65% at 0% 100%, rgba(6, 12, 23, 0.92) 0%, rgba(6, 12, 23, 0.55) 45%, transparent 75%);
   opacity: var(--hero-veil, 1); transition: opacity 0.8s var(--ease-out);
 }
 body:not([data-chapter="hero"]) .chapter-hero::before { --hero-veil: 0; }
@@ -114,10 +121,14 @@ body:not([data-chapter="hero"]) .chapter-hero::before { --hero-veil: 0; }
   .chapter { padding-top: 42svh; min-height: 150vh; }
   .wordmark { margin-right: auto; }
   .card {
-    top: 42svh; max-height: calc(58svh - 12px); padding: 20px 20px 16px;
+    top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; transform: none;
+    max-height: 56svh; padding: 20px 20px 16px;
   }
-  .card-hero { width: 100%; min-height: 100svh; justify-content: flex-end; padding-bottom: 32px; max-height: none; }
+  .card-hero { top: 0; bottom: 0; left: 16px; right: 16px; width: auto; min-height: 100svh; justify-content: flex-end; padding-bottom: 32px; max-height: none; }
   .chapter-hero { padding-top: 0; }
   .chapter-hero::before { background: linear-gradient(0deg, rgba(10, 15, 22, 0.92) 10%, rgba(10, 15, 22, 0.2) 55%, transparent 75%); }
   .step-no { font-size: 2.6rem; }
 }
+
+/* Không có WebGL: không có câu chuyện cuộn, hiện mọi thẻ theo luồng trang bình thường. */
+body.no-webgl .card { position: relative; top: auto; transform: none; opacity: 1; visibility: visible; pointer-events: auto; }

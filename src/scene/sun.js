@@ -84,7 +84,7 @@ export function createSun(scene, sunLight) {
   const layer = createLayer('sun');
   const beamMat = beamMaterial();
   const patchMat = new THREE.MeshBasicMaterial({
-    color: SUN_COLOR, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending,
+    color: SUN_COLOR, transparent: true, opacity: 0, depthWrite: false,
     side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2,
   });
   const panes = Array.from({ length: PANES }, () => makePane(layer.group, beamMat, patchMat));
@@ -148,14 +148,14 @@ export function createSun(scene, sunLight) {
       const up = sunAltitude(minute) > 0;
       intensity = damp(intensity, up ? Math.min(1, state.outdoorLux / FULL_SUN_LUX) : 0, 3, dt);
       sunLight.position.copy(sunPos);
-      sunLight.intensity = intensity * 2.6 * Math.max(layer.mix, 0.25);
+      sunLight.intensity = intensity * 3.2 * Math.max(layer.mix, 0.25);
       sunLight.castShadow = intensity > 0.05 && layer.mix > 0.05;
 
       if (!layer.group.visible) return;
       const shown = intensity * layer.mix;
       updateGeometry();
       beamMat.uniforms.uI.value = shown;
-      patchMat.opacity = 0.55 * shown;
+      patchMat.opacity = 0.16 * shown; // vệt nắng thật do bóng đổ tạo ra; lớp này chỉ ấm màu thêm
       dust.mat.opacity = 0.85 * shown;
       for (let i = 0; i < DUST; i += 1) {
         dust.pos[i * 3 + 1] += Math.sin(performance.now() * 0.0004 + i) * 0.0015;

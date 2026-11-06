@@ -27,6 +27,13 @@ export function createLayer(name) {
       labelEls.push(el);
       return el;
     },
+    /** Gắn mặt cắt cho mọi vật liệu đã đăng ký (dùng cho hiệu ứng quét hologram). */
+    clip(planes) {
+      faders.forEach(({ material }) => {
+        // eslint-disable-next-line no-param-reassign -- vật liệu three.js là đối tượng có trạng thái
+        material.clippingPlanes = planes;
+      });
+    },
     setMix(v) {
       mix = v;
       group.visible = v > 0.005;
